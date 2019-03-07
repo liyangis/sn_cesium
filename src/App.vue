@@ -1,15 +1,15 @@
 <template>
   <div id="app">
-    <cesiumViewer></cesiumViewer>
+    <CesiumMap></CesiumMap>
       </div>
 </template>
 
 <script>
-import cesiumViewer from "./components/Map.vue"
+import CesiumMap from "./components/CesiumMap.vue"
 export default {
   name: 'App',
   components : {
-    'cesiumViewer' : cesiumViewer
+    'CesiumMap' : CesiumMap
   }
 }
 </script>

@@ -1,23 +1,26 @@
 <template>
   <div class="container">
     <div id="cesiumContainer"></div>
-    <div id="menu">
+    <!-- <div id="menu">
       <p>
         <button v-on:click="DrawLineKSY()">可视域</button>
       </p>
       <p>
         <button v-on:click="ClearAll()">清除</button>
       </p>
-    </div>
+    </div> -->
     <div class="measure">
       <ul>
         <li v-on:click="measureTriangle()">高度</li>
         <li :class="selected?'btn-sel':'btn'" v-on:click="measureDistance()">距离</li>
         <li v-on:click="measureArea()">面积</li>
-        <li v-on:click="remove">清除</li>
-        <li v-on:click="creatHeatMap">热力图</li>
+        <li v-on:click="remove()">清除</li>
+        <li v-on:click="heatMap()">热力图</li>
+        <li v-on:click="createProfile()">剖面分析</li>
+        <li v-on:click="add3DTiles()">3DTiles</li>
       </ul>
     </div>
+    <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
     <div id="credit"></div>
     <div id="latlng_show">
       <div class="item">
@@ -53,8 +56,12 @@ import MeasureArea from "../modules/MeasureArea";
 import MeasureTriangle from "../modules/MeasureTriangle";
 // import Measure from "../modules/measure";
 import HeatMap from "../modules/heatmap";
+
+import ProfileChart from "./ProfileChart.vue";
+import DrawProfile from "../modules/DrawProfile";
 export default {
-  name: "cesiumMap",
+  name: "CesiumMap",
+
   mounted: function() {
     // buildModuleUrl.setBaseUrl("../static/cesium/");
     buildModuleUrl.setBaseUrl("../cesium/");
@@ -73,6 +80,7 @@ export default {
     };
     this.viewer = new Viewer("cesiumContainer", opts);
     var viewer = this.viewer;
+    // 深度检测
     // viewer.scene.globe.depthTestAgainstTerrain = true;
     // 实时坐标
     this.showPosition();
@@ -105,13 +113,15 @@ export default {
       selected: false,
       log_String: "",
       lat_String: "",
-      alti_String: ""
+      alti_String: "",
+      profileShow: false,
+      profileData: null
     };
   },
+  components: {
+    ProfileChart
+  },
   methods: {
-    measureHeight: function() {
-      Measure.measureHeight(this.viewer, null);
-    },
     measureTriangle: function() {
       // Measure.measureTriangle(this.viewer, null);
 
@@ -199,7 +209,9 @@ export default {
           outline: true,
           outlineColor: Cesium.Color.MAGENTA,
           outlineWidth: 2,
-          material: Cesium.Color.ORANGE
+          material: Cesium.Color.ORANGE,
+          // 默认贴地
+          arcType:Cesium.ArcType.GEODESIC
         }
       });
     },
@@ -217,6 +229,54 @@ export default {
         this.measureTri.remove();
         this.measureTri = null;
       }
+      if (this.profileObj) {
+        this.profileObj.remove();
+        this.profileObj = null;
+        this.profileShow = false;
+      }
+    },
+    heatMap: function() {
+      this.heatMapObj = new HeatMap(this.viewer);
+    },
+    createProfile: function() {
+      this.profileShow = false;
+      this.profileObj = new DrawProfile(
+        this.viewer,
+        {
+          lineStyle: {
+            width: 1,
+            material: Cesium.Color.CHARTREUSE
+          }
+        },
+        data => {
+          this.profileShow = true;
+          this.profileData = data;
+        }
+      );
+    },
+    add3DTiles: function() {
+      // Load the NYC buildings tileset
+      var tileset = new Cesium.Cesium3DTileset({
+        url: Cesium.IonResource.fromAssetId(5741)
+      });
+      this.viewer.scene.primitives.add(tileset);
+
+      // Set the initial camera view to look at Manhattan
+      var initialPosition = Cesium.Cartesian3.fromDegrees(
+        -74.01881302800248,
+        40.69114333714821,
+        753
+      );
+      var initialOrientation = new Cesium.HeadingPitchRoll.fromDegrees(
+        21.27879878293835,
+        -21.34390550872461,
+        0.0716951918898415
+      );
+      this.viewer.scene.camera.setView({
+        destination: initialPosition,
+        orientation: initialOrientation,
+        endTransform: Cesium.Matrix4.IDENTITY
+      });
     },
     showPosition: function() {
       let that = this;
@@ -249,10 +309,6 @@ export default {
         }
       }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     }
-  },
-  // 热力图
-  creatHeatMap() {
-    this.heatMap = new HeatMap(this.viewer);
   }
 };
 </script>

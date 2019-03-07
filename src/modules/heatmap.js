@@ -1,5 +1,4 @@
-import Cesium from 'cesium/Source/Cesium'
-import  CesiumHeatmap from 'cesium-heatmap'
+import CesiumHeatmap from '../modules/CesiumHeatmap'
 export default class HeatMap {
     constructor(viewer, data = null) {
         this.viewer = viewer;
@@ -38,3 +37,4 @@ export default class HeatMap {
 
 
 }
+

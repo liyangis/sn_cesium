@@ -44,12 +44,22 @@ export default class DrawProfile {
                 this._reDraw()
                 reDraw = false
             }
-            let pickedObject = scene.pick(movement.position)
-            // if (!Cesium.defined(pickedObject) || pickedObject.primitive instanceof Cesium.Polyline || pickedObject.primitive instanceof Cesium.Primitive) {
-            if (true) {
-                // 方法二
-                let ray = viewer.camera.getPickRay(movement.position);
-                let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+            var scene = viewer.scene;
+            // if (scene.mode !== Cesium.SceneMode.MORPHING) {
+            var pickedObject = scene.pick(movement.position);
+            if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+                var cartesian = viewer.scene.pickPosition(movement.position);
+                if (Cesium.defined(cartesian)) {
+                    var cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+                    var lng = Cesium.Math.toDegrees(cartographic.longitude);
+                    var lat = Cesium.Math.toDegrees(cartographic.latitude);
+                    var height = cartographic.height;//模型高度
+                    mapPosition = { x: lng, y: lat, z: height };
+                    console.log(mapPosition);
+                }
+                // // 方法二
+                // let ray = viewer.camera.getPickRay(movement.position);
+                // let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
                 const xy = movement.position;
                 if (cartesian) {
                     // this.tempPoints.push(this._car3ToLatLon(cartesian))
@@ -184,7 +194,7 @@ export default class DrawProfile {
             })
         this.tempEntities.push(entity)
     }
-   
+
 
 
     // 世界坐标转经纬坐标
@@ -222,7 +232,7 @@ export default class DrawProfile {
     }
 
     _getDistanceHeight(points, xys) {
-       
+
         // 经纬度
         const startPoint = this._car3ToLatLon(points[0]);
         const endPoint = this._car3ToLatLon(points[1]);

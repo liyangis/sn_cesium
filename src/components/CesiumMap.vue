@@ -2,13 +2,13 @@
   <div class="container">
     <div id="cesiumContainer"></div>
     <!-- <div id="menu">
-      <p>
-        <button v-on:click="DrawLineKSY()">可视域</button>
-      </p>
-      <p>
-        <button v-on:click="ClearAll()">清除</button>
-      </p>
-    </div> -->
+            <p>
+              <button v-on:click="DrawLineKSY()">可视域</button>
+            </p>
+            <p>
+              <button v-on:click="ClearAll()">清除</button>
+            </p>
+          </div> -->
     <div class="measure">
       <ul>
         <li v-on:click="measureTriangle()">高度</li>
@@ -18,6 +18,7 @@
         <li v-on:click="heatMap()">热力图</li>
         <li v-on:click="createProfile()">剖面分析</li>
         <li v-on:click="add3DTiles()">3DTiles</li>
+        <li v-on:click="createViewLine()">通视</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
@@ -59,6 +60,8 @@ import HeatMap from "../modules/heatmap";
 
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
+
+import DrawView from "../modules/DrawView";
 export default {
   name: "CesiumMap",
 
@@ -150,7 +153,7 @@ export default {
             material: Cesium.Color.CHARTREUSE
           }
         },
-        () => {}
+        () => { }
       );
     },
     measureDistance: function() {
@@ -176,10 +179,12 @@ export default {
           },
           lineStyle: {
             width: 2,
-            material: Cesium.Color.CHARTREUSE
+            material: Cesium.Color.CHARTREUSE,
+            // 是否贴地
+            clampToGround: true,
           }
         },
-        () => {}
+        () => { }
       );
     },
 
@@ -211,7 +216,7 @@ export default {
           outlineWidth: 2,
           material: Cesium.Color.ORANGE,
           // 默认贴地
-          arcType:Cesium.ArcType.GEODESIC
+          arcType: Cesium.ArcType.GEODESIC
         }
       });
     },
@@ -244,8 +249,11 @@ export default {
         this.viewer,
         {
           lineStyle: {
-            width: 1,
-            material: Cesium.Color.CHARTREUSE
+            width: 2,
+            material: Cesium.Color.CHARTREUSE,
+
+            // 是否贴地
+            clampToGround: true,
           }
         },
         data => {
@@ -277,6 +285,17 @@ export default {
         orientation: initialOrientation,
         endTransform: Cesium.Matrix4.IDENTITY
       });
+    },
+    createViewLine: function() {
+      this.viewLine = new DrawView(this.viewer, {
+        lineStyle: {
+          width: 2,
+          material: Cesium.Color.CHARTREUSE,
+
+          // 是否贴地
+          clampToGround: true,
+        }
+      })
     },
     showPosition: function() {
       let that = this;
@@ -379,6 +398,7 @@ ul li {
   height: 30px;
   float: left;
 }
+
 #menu {
   position: absolute;
   top: 50px;

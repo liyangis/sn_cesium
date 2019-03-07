@@ -70,8 +70,9 @@ export default class DrawProfile {
                             }
                             this._drawPoint(lastPoint)
                             xys.push({ x: xy.x, y: xy.y })
-                            const data = this._getDistanceHeight(linePositionList, xys)
-                            this.callback(data)
+                            // const data = this._getDistanceHeight(linePositionList, xys)
+                            // this.callback(data)
+                            this._test(linePositionList);
                             reDraw = true;
                             // 清除
                             xys = [];
@@ -184,7 +185,7 @@ export default class DrawProfile {
             })
         this.tempEntities.push(entity)
     }
-   
+
 
 
     // 世界坐标转经纬坐标
@@ -222,7 +223,7 @@ export default class DrawProfile {
     }
 
     _getDistanceHeight(points, xys) {
-       
+
         // 经纬度
         const startPoint = this._car3ToLatLon(points[0]);
         const endPoint = this._car3ToLatLon(points[1]);
@@ -250,8 +251,48 @@ export default class DrawProfile {
             }
 
         }
-        return heightArr;
 
+
+        return heightArr;
+    }
+    _test(points) {
+        const viewer = this.viewer;
+        var count = 30;
+        var cartesians = new Array(count);
+        for (var i = 0; i < count; ++i) {
+            var offset = i / (count - 1);
+            cartesians[i] = Cesium.Cartesian3.lerp(points[0], points[1], offset, new Cesium.Cartesian3());
+        }
+
+
+        viewer.scene.clampToHeightMostDetailed(cartesians).then(function (clampedCartesians) {
+            for (var i = 0; i < count; ++i) {
+                viewer.entities.add({
+                    position: clampedCartesians[i],
+                    ellipsoid: {
+                        radii: new Cesium.Cartesian3(0.2, 0.2, 0.2),
+                        material: Cesium.Color.RED
+                    }
+                });
+            }
+
+            viewer.entities.add({
+                polyline: {
+                    positions: clampedCartesians,
+                    // followSurface: false,
+                    width: 2,
+                    material: new Cesium.PolylineOutlineMaterialProperty({
+                        color: Cesium.Color.YELLOW
+                    }),
+                    depthFailMaterial: new Cesium.PolylineOutlineMaterialProperty({
+                        color: Cesium.Color.YELLOW
+                    })
+                }
+            });
+        }).then((d) => {
+            console.log(d);
+            //  return heightArr;
+        });
     }
 
     //移除整个资源

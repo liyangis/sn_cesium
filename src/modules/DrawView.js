@@ -1,8 +1,8 @@
 
 import Cesium from 'cesium/Source/Cesium'
 
-
-export default class DrawProfile {
+// 视线可视分析
+export default class DrawViewLine {
     constructor(viewer, style, callback) {
         this.viewer = viewer
         this.style = style
@@ -38,101 +38,133 @@ export default class DrawProfile {
         let isDraw = false
         let reDraw = false
         let xys = this.xys;
+        const that = this;
 
         this.handler.setInputAction((movement) => {
+
             if (reDraw) {
                 this._reDraw()
                 reDraw = false
             }
             var scene = viewer.scene;
+
             // if (scene.mode !== Cesium.SceneMode.MORPHING) {
-            var pickedObject = scene.pick(movement.position);
-            if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
-                var cartesian = viewer.scene.pickPosition(movement.position);
-                if (Cesium.defined(cartesian)) {
-                    var cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-                    var lng = Cesium.Math.toDegrees(cartographic.longitude);
-                    var lat = Cesium.Math.toDegrees(cartographic.latitude);
-                    var height = cartographic.height;//模型高度
-                    mapPosition = { x: lng, y: lat, z: height };
-                    console.log(mapPosition);
-                }
-                // // 方法二
-                // let ray = viewer.camera.getPickRay(movement.position);
-                // let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
-                const xy = movement.position;
-                if (cartesian) {
-                    // this.tempPoints.push(this._car3ToLatLon(cartesian))
-                    if (isDraw) {
-                        // 结束
-                        if (firstPoint) {
-                            lastPoint = cartesian.clone();
-
-                            if (linePositionList.length === 1) {
-                                linePositionList.push(lastPoint)
-
-                                this.labelPosition = cartesian.clone()
-                            } else if (linePositionList.length > 1) {
-                                linePositionList.length = 0;
-                                linePositionList.push(firstPoint)
-                                linePositionList.push(lastPoint)
-
-                            }
-                            this._drawPoint(lastPoint)
-                            xys.push({ x: xy.x, y: xy.y })
-                            const data = this._getDistanceHeight(linePositionList, xys)
-                            this.callback(data)
-                            reDraw = true;
-                            // 清除
-                            xys = [];
-                            isDraw = false
-                            this.endDraw = true;
-
-                        }
-
-
-                    } else {
-                        //开始
-                        // if (this.endDraw) return;
-                        firstPoint = cartesian.clone();
-                        this.firstPoint = firstPoint;
-                        this._drawPoint(firstPoint)
-                        isDraw = true
+            const cartesian = this._getPosition(movement.position);
+            const xy = movement.position;
+            if (isDraw) {
+                // 结束
+                if (firstPoint) {
+                    lastPoint = cartesian.clone();
+                    if (linePositionList.length === 1) {
+                        linePositionList.push(lastPoint)
+                        this.labelPosition = cartesian.clone()
+                    } else if (linePositionList.length > 1) {
+                        linePositionList.length = 0;
                         linePositionList.push(firstPoint)
-                        xys.push({ x: xy.x, y: xy.y })
-                    }
+                        linePositionList.push(lastPoint)
 
+                    }
+                    this._drawPoint(lastPoint)
+                    xys.push({ x: xy.x, y: xy.y })
+                    // const data = this._getDistanceHeight(linePositionList, xys)
+                    // console.log(data);
+                    this._test(linePositionList, this.callback)
+                    // if (this.callback)
+                    //     this.callback(data)
+                    reDraw = true;
+                    // 清除
+                    xys = [];
+                    isDraw = false
+                    this.endDraw = true;
                 }
 
+
+            } else {
+                //开始
+                // if (this.endDraw) return;
+                firstPoint = cartesian.clone();
+                this.firstPoint = firstPoint;
+                this._drawPoint(firstPoint)
+                isDraw = true
+                linePositionList.push(firstPoint)
+                xys.push({ x: xy.x, y: xy.y })
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
         this.handler.setInputAction((movement) => {
-            // 方法二
-            let ray = viewer.camera.getPickRay(movement.endPosition);
-            let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
-            if (cartesian) {
-                if (isDraw) {
-                    // 开始
-                    if (firstPoint) {
-                        lastPoint = cartesian.clone();
-                        if (linePositionList.length === 1) {
-                            linePositionList.push(lastPoint)
-                            this.labelPosition = cartesian.clone()
-                        } else if (linePositionList.length > 1) {
-                            linePositionList.length = 0;
-                            linePositionList.push(firstPoint)
-                            linePositionList.push(lastPoint)
-                        }
-
+            if (isDraw) {
+                const cartesian = that._getPosition(movement.endPosition);
+                // 开始
+                if (firstPoint) {
+                    lastPoint = cartesian.clone();
+                    if (linePositionList.length === 1) {
+                        linePositionList.push(lastPoint)
+                        this.labelPosition = cartesian.clone()
+                    } else if (linePositionList.length > 1) {
+                        linePositionList.length = 0;
+                        linePositionList.push(firstPoint)
+                        linePositionList.push(lastPoint)
                     }
 
                 }
+
             }
 
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
         this.handler.setInputAction((movement) => {
 
         }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
+    }
+    // 测试不同坐标
+    _getPositionTest(position) {
+        const viewer = this.viewer;
+        const scene = viewer.scene;
+        // 椭球体表面经纬度和高度,二维经纬度，高度始终为0
+        var cartesian1 = viewer.camera.pickEllipsoid(position, viewer.scene.globe.ellipsoid);
+        const { lon, lat, height } = this._car3ToLatLon(cartesian1)//cartographic.height的值始终为零。
+        console.log('椭球体表面经纬度和高度' + lon + ' ' + lat + ' ' + height)
+
+        // 方式三，模型坐标
+        var pickedObject = scene.pick(position);
+        if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+            var cartesian2 = viewer.scene.pickPosition(position);
+            if (Cesium.defined(cartesian2)) {
+                const { lon, lat, height } = this._car3ToLatLon(cartesian2)//cartographic.height的值始终为零。
+                console.log('模型：' + + lon + ' ' + lat + ' ' + height)
+            }
+        } else {
+            // 方式二，量测坐标
+            let ray = viewer.camera.getPickRay(position);
+            let cartesian3 = viewer.scene.globe.pick(ray, viewer.scene);
+            if (Cesium.defined(cartesian3)) {
+                const { lon, lat, height } = this._car3ToLatLon(cartesian3)//cartographic.height的值始终为零。
+                console.log('地形表面：' + + lon + ' ' + lat + ' ' + height)
+            }
+        }
+    }
+    // 取点坐标
+    _getPosition(position) {
+        const viewer = this.viewer;
+        const scene = viewer.scene;
+        let cartesian = null;
+        // 方式三，模型坐标
+        const pickedObject = scene.pick(position);
+        // if (pickedObject instanceof Cesium.Cesium3DTileFeature) {
+        //     pickedObject.color = Cesium.Color.YELLOW;
+        // }
+        if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+            const cart = viewer.scene.pickPosition(position);
+            if (Cesium.defined(cart)) {
+                cartesian = cart
+            }
+        } else {
+            // 方式二，量测坐标
+            const ray = viewer.camera.getPickRay(position);
+            const cart = viewer.scene.globe.pick(ray, viewer.scene);
+            if (Cesium.defined(cart)) {
+                cartesian = cart
+            }
+        }
+        return cartesian
     }
     // 计算高程点,转成笛卡尔坐标
     _computePoint(firstPoint, lastPoint) {
@@ -208,34 +240,12 @@ export default class DrawProfile {
             height: cartographic.height
         }
     }
-    //计算总距离-空间距离
-    _getSpatialDistance(positions) {
-        //空间两点距离计算函数
-
-        var point1cartographic = Cesium.Cartographic.fromCartesian(positions[0]);
-        var point2cartographic = Cesium.Cartographic.fromCartesian(positions[1]);
-        /**根据经纬度计算出距离**/
-        var geodesic = new Cesium.EllipsoidGeodesic();
-        geodesic.setEndPoints(point1cartographic, point2cartographic);
-        var s = geodesic.surfaceDistance;
-        //console.log(Math.sqrt(Math.pow(distance, 2) + Math.pow(endheight, 2)));
-        //返回两点之间的距离
-        var d = Math.sqrt(Math.pow(s, 2) + Math.pow(point2cartographic.height - point1cartographic.height, 2));
-
-        // return distance.toFixed(2);
-        return {
-            d_h: Math.abs(point2cartographic.height - point1cartographic.height),
-            d_flat: s,
-            d_spatial: d
-        }
-
-    }
 
     _getDistanceHeight(points, xys) {
-
         // 经纬度
         const startPoint = this._car3ToLatLon(points[0]);
         const endPoint = this._car3ToLatLon(points[1]);
+
         const pointSum = 10;  //取样点个数
         const addXTT = Cesium.Math.lerp(startPoint.lon, endPoint.lon, 1.0 / pointSum) - startPoint.lon;
         const addYTT = Cesium.Math.lerp(startPoint.lat, endPoint.lat, 1.0 / pointSum) - startPoint.lat;
@@ -247,21 +257,87 @@ export default class DrawProfile {
         for (let index = 0; index < pointSum; index++) {
             var x = leftXY.x + (index + 1) * addX;
             var y = leftXY.y + (index + 1) * addY;
-
             var eventPosition = { x: x, y: y };
-
-            var ray = this.viewer.camera.getPickRay(eventPosition);
-            var position = this.viewer.scene.globe.pick(ray, this.viewer.scene);
-            if (Cesium.defined(position)) {
-                // const position1=this.viewer.scene.clampToHeight(position) 
-                var cartographic = Cesium.Ellipsoid.WGS84.cartesianToCartographic(position);
-                // console.log("点击处海拔高度为：" + cartographic.height + "米");
-                heightArr[index] = cartographic.height.toFixed(2);   //保留两位小数
+            var scene = this.viewer.scene;
+            // if (scene.mode !== Cesium.SceneMode.MORPHING) {
+            var pickedObject = scene.pick(eventPosition);
+            const cartestin = this._getPosition(eventPosition)
+            if (!cartestin) {
+                const objectsToExclude = []
+                const position = scene.clampToHeight(cartestin, objectsToExclude);
             }
+            // if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+            //     var cartesian = this.viewer.scene.pickPosition(eventPosition);
+            //     if (Cesium.defined(cartesian)) {
+            //         const position = this._car3ToLatLon(cartesian)
+            //         const height= position.height.toFixed(2);
+            //         heightArr[index] =height;
+            //     }
+            // } else {
+            //     var ray = this.viewer.camera.getPickRay(eventPosition);
+            //     var cartesian = this.viewer.scene.globe.pick(ray, this.viewer.scene);
+            //     // const position1=this.viewer.scene.clampToHeight(position) 
+            //     if (Cesium.defined(cartesian)) {
+            //         const position = this._car3ToLatLon(cartesian)
+            //         const height= position.height.toFixed(2);
+            //         heightArr[index] =height;
+            //     }
+            // }
+
 
         }
         return heightArr;
 
+    }
+    _test(points, callback = null) {
+        const that = this;
+        const viewer = this.viewer;
+        var count = 30;
+        var cartesians = new Array(count);
+        for (var i = 0; i < count; ++i) {
+            var offset = i / (count - 1);
+            cartesians[i] = Cesium.Cartesian3.lerp(points[0], points[1], offset, new Cesium.Cartesian3());
+        }
+
+
+        viewer.scene.clampToHeightMostDetailed(cartesians).then(function (clampedCartesians) {
+            let heightArr = clampedCartesians.map((d) => {
+                const h = that._car3ToLatLon(d).height
+                if (h < 0) h = 0;
+                return h;
+            });
+
+            if (callback) {
+                callback(heightArr)
+            }
+            for (var i = 0; i < count; ++i) {
+
+                viewer.entities.add({
+                    position: clampedCartesians[i],
+                    ellipsoid: {
+                        radii: new Cesium.Cartesian3(0.2, 0.2, 0.2),
+                        material: Cesium.Color.RED
+                    }
+                });
+            }
+
+            viewer.entities.add({
+                polyline: {
+                    positions: clampedCartesians,
+                    // followSurface: false,
+                    width: 2,
+                    material: new Cesium.PolylineOutlineMaterialProperty({
+                        color: Cesium.Color.YELLOW
+                    }),
+                    depthFailMaterial: new Cesium.PolylineOutlineMaterialProperty({
+                        color: Cesium.Color.YELLOW
+                    })
+                }
+            });
+        }).then((d) => {
+            console.log(d);
+            //  return heightArr;
+        });
     }
 
     //移除整个资源

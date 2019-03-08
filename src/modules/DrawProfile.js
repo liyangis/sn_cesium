@@ -70,9 +70,9 @@ export default class DrawProfile {
                             }
                             this._drawPoint(lastPoint)
                             xys.push({ x: xy.x, y: xy.y })
-                            // const data = this._getDistanceHeight(linePositionList, xys)
-                            // this.callback(data)
-                            this._test(linePositionList);
+                            const data = this._getDistanceHeight(linePositionList, xys)
+                            this.callback(data)
+                            
                             reDraw = true;
                             // 清除
                             xys = [];
@@ -251,8 +251,6 @@ export default class DrawProfile {
             }
 
         }
-
-
         return heightArr;
     }
     _test(points) {

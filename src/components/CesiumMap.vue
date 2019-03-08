@@ -8,14 +8,14 @@
             <p>
               <button v-on:click="ClearAll()">清除</button>
             </p>
-          </div> -->
+    </div>-->
     <div class="measure">
       <ul>
         <li v-on:click="measureTriangle()">高度</li>
         <li :class="selected?'btn-sel':'btn'" v-on:click="measureDistance()">距离</li>
         <li v-on:click="measureArea()">面积</li>
         <li v-on:click="remove()">清除</li>
-        <li v-on:click="heatMap()">热力图</li>
+        <li v-show="false" v-on:click="heatMap()">热力图</li>
         <li v-on:click="createProfile()">剖面分析</li>
         <li v-on:click="add3DTiles()">3DTiles</li>
         <li v-on:click="createViewLine()">通视</li>
@@ -61,7 +61,7 @@ import HeatMap from "../modules/heatmap";
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
 
-import DrawView from "../modules/DrawView";
+import DrawViewLine from "../modules/DrawView";
 export default {
   name: "CesiumMap",
 
@@ -153,7 +153,7 @@ export default {
             material: Cesium.Color.CHARTREUSE
           }
         },
-        () => { }
+        () => {}
       );
     },
     measureDistance: function() {
@@ -179,12 +179,12 @@ export default {
           },
           lineStyle: {
             width: 2,
-            material: Cesium.Color.CHARTREUSE,
+            material: Cesium.Color.CHARTREUSE
             // 是否贴地
-            clampToGround: true,
+            // clampToGround: true,
           }
         },
-        () => { }
+        () => {}
       );
     },
 
@@ -214,7 +214,7 @@ export default {
           outline: true,
           outlineColor: Cesium.Color.MAGENTA,
           outlineWidth: 2,
-          material: Cesium.Color.ORANGE,
+          material: Cesium.Color.CHARTREUSE,
           // 默认贴地
           arcType: Cesium.ArcType.GEODESIC
         }
@@ -253,7 +253,7 @@ export default {
             material: Cesium.Color.CHARTREUSE,
 
             // 是否贴地
-            clampToGround: true,
+            clampToGround: true
           }
         },
         data => {
@@ -271,9 +271,9 @@ export default {
 
       // Set the initial camera view to look at Manhattan
       var initialPosition = Cesium.Cartesian3.fromDegrees(
-        -74.01881302800248,
-        40.69114333714821,
-        753
+        -74.01051302800248,
+        40.70414333714821,
+        353
       );
       var initialOrientation = new Cesium.HeadingPitchRoll.fromDegrees(
         21.27879878293835,
@@ -287,15 +287,22 @@ export default {
       });
     },
     createViewLine: function() {
-      this.viewLine = new DrawView(this.viewer, {
-        lineStyle: {
-          width: 2,
-          material: Cesium.Color.CHARTREUSE,
+      this.viewLine = new DrawViewLine(
+        this.viewer,
+        {
+          lineStyle: {
+            width: 2,
+            material: Cesium.Color.CHARTREUSE
 
-          // 是否贴地
-          clampToGround: true,
+            // 是否贴地
+            // clampToGround: true,
+          }
+        },
+        data => {
+          this.profileShow = true;
+          this.profileData = data;
         }
-      })
+      );
     },
     showPosition: function() {
       let that = this;

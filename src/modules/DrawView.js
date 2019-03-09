@@ -50,6 +50,7 @@ export default class DrawViewLine {
 
             // if (scene.mode !== Cesium.SceneMode.MORPHING) {
             const cartesian = this._getPosition(movement.position);
+            // if(!cartesian)return
             const xy = movement.position;
             if (isDraw) {
                 // 结束
@@ -66,9 +67,9 @@ export default class DrawViewLine {
                     }
                     this._drawPoint(lastPoint)
                     xys.push({ x: xy.x, y: xy.y })
-                    // const data = this._getDistanceHeight(linePositionList, xys)
-                    // console.log(data);
-                    this._test(linePositionList, this.callback)
+                    this._getDistanceHeight(linePositionList, xys, this.callback)
+
+                    // this._test(linePositionList, this.callback)
                     // if (this.callback)
                     //     this.callback(data)
                     reDraw = true;
@@ -93,6 +94,7 @@ export default class DrawViewLine {
         this.handler.setInputAction((movement) => {
             if (isDraw) {
                 const cartesian = that._getPosition(movement.endPosition);
+                // if(!cartesian)return
                 // 开始
                 if (firstPoint) {
                     lastPoint = cartesian.clone();
@@ -221,7 +223,7 @@ export default class DrawViewLine {
                     pixelSize: 10,
                     color: Cesium.Color.GOLD,
                     disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                    // heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+                    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
                 }
             })
         this.tempEntities.push(entity)
@@ -241,69 +243,73 @@ export default class DrawViewLine {
         }
     }
 
-    _getDistanceHeight(points, xys) {
+    _getDistanceHeight(points, xys, callback) {
+
         // 经纬度
         const startPoint = this._car3ToLatLon(points[0]);
         const endPoint = this._car3ToLatLon(points[1]);
-
-        const pointSum = 10;  //取样点个数
+        const pointSum = 20;  //取样点个数
         const addXTT = Cesium.Math.lerp(startPoint.lon, endPoint.lon, 1.0 / pointSum) - startPoint.lon;
         const addYTT = Cesium.Math.lerp(startPoint.lat, endPoint.lat, 1.0 / pointSum) - startPoint.lat;
-        //  屏幕坐标
-        const [leftXY, rightXY] = xys;
-        var addX = Cesium.Math.lerp(leftXY.x, rightXY.x, 1.0 / pointSum) - leftXY.x;
-        var addY = Cesium.Math.lerp(leftXY.y, rightXY.y, 1.0 / pointSum) - leftXY.y;
+       
         var heightArr = [];
-        for (let index = 0; index < pointSum; index++) {
-            var x = leftXY.x + (index + 1) * addX;
-            var y = leftXY.y + (index + 1) * addY;
-            var eventPosition = { x: x, y: y };
-            var scene = this.viewer.scene;
-            // if (scene.mode !== Cesium.SceneMode.MORPHING) {
-            var pickedObject = scene.pick(eventPosition);
-            const cartestin = this._getPosition(eventPosition)
-            if (!cartestin) {
-                const objectsToExclude = []
-                const position = scene.clampToHeight(cartestin, objectsToExclude);
-            }
-            // if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
-            //     var cartesian = this.viewer.scene.pickPosition(eventPosition);
-            //     if (Cesium.defined(cartesian)) {
-            //         const position = this._car3ToLatLon(cartesian)
-            //         const height= position.height.toFixed(2);
-            //         heightArr[index] =height;
-            //     }
-            // } else {
-            //     var ray = this.viewer.camera.getPickRay(eventPosition);
-            //     var cartesian = this.viewer.scene.globe.pick(ray, this.viewer.scene);
-            //     // const position1=this.viewer.scene.clampToHeight(position) 
-            //     if (Cesium.defined(cartesian)) {
-            //         const position = this._car3ToLatLon(cartesian)
-            //         const height= position.height.toFixed(2);
-            //         heightArr[index] =height;
-            //     }
-            // }
-
-
+        var pts = []
+        for (var i = 0; i < pointSum; ++i) {
+            var offset = i / (pointSum - 1);
+            var x = Cesium.Math.lerp(startPoint.lon, endPoint.lon, offset);
+            var y = Cesium.Math.lerp(startPoint.lat, endPoint.lat, offset);
+            pts.push([x, y]);
         }
-        return heightArr;
+
+        // Query the terrain height of two Cartographic positions
+        var terrainProvider = Cesium.createWorldTerrain();
+        var positions = pts.map(d => Cesium.Cartographic.fromDegrees(...d))
+        // 根据地形计算某经纬度点的高度
+        var promise = Cesium.sampleTerrainMostDetailed(terrainProvider, positions);
+        Cesium.when(promise, function (updatedPositions) {
+            // positions[0].height and positions[1].height have been updated.
+            // updatedPositions is just a reference to positions.
+            console.log(...positions)
+            heightArr = positions.map(d => d.height)
+            if (callback) {
+                callback(heightArr)
+            }
+        });
 
     }
+    // 判断两点之间的剖面高度
     _test(points, callback = null) {
         const that = this;
         const viewer = this.viewer;
-        var count = 30;
+        var count = 20;
         var cartesians = new Array(count);
         for (var i = 0; i < count; ++i) {
             var offset = i / (count - 1);
             cartesians[i] = Cesium.Cartesian3.lerp(points[0], points[1], offset, new Cesium.Cartesian3());
         }
 
+        for (var i = 0; i < count; ++i) {
+
+            viewer.entities.add({
+                position: cartesians[i],
+                ellipsoid: {
+                    radii: new Cesium.Cartesian3(0.2, 0.2, 0.2),
+                    material: Cesium.Color.BLUE
+                }
+            });
+        }
 
         viewer.scene.clampToHeightMostDetailed(cartesians).then(function (clampedCartesians) {
             let heightArr = clampedCartesians.map((d) => {
-                const h = that._car3ToLatLon(d).height
-                if (h < 0) h = 0;
+                const pt_lonlat = that._car3ToLatLon(d);
+                var cartographic = Cesium.Ellipsoid.WGS84.cartesianToCartographic(d);
+                let longitudeString = Cesium.Math.toDegrees(cartographic.longitude)
+                let latitudeString = Cesium.Math.toDegrees(cartographic.latitude)
+                console.log('lon|lat|height' + longitudeString + ' ' + latitudeString + ' ' + cartographic.height);
+                let h = 0
+                if (pt_lonlat) {
+                    h = pt_lonlat.height
+                }
                 return h;
             });
 

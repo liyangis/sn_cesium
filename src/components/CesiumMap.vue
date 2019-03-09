@@ -292,10 +292,10 @@ export default {
         {
           lineStyle: {
             width: 2,
-            material: Cesium.Color.CHARTREUSE
+            material: Cesium.Color.CHARTREUSE,
 
             // 是否贴地
-            // clampToGround: true,
+            clampToGround: true,
           }
         },
         data => {

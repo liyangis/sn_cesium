@@ -144,29 +144,38 @@ export default class DrawViewLine {
         }
     }
     // 取点坐标
-    _getPosition(position) {
+    _getPosition(position, type = 0) {
         const viewer = this.viewer;
         const scene = viewer.scene;
         let cartesian = null;
-        // 方式三，模型坐标
-        const pickedObject = scene.pick(position);
-        // if (pickedObject instanceof Cesium.Cesium3DTileFeature) {
-        //     pickedObject.color = Cesium.Color.YELLOW;
-        // }
-        if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
-            const cart = viewer.scene.pickPosition(position);
-            if (Cesium.defined(cart)) {
-                cartesian = cart
+        if (type) {
+            // 方式三，模型坐标
+            const pickedObject = scene.pick(position);
+            // if (pickedObject instanceof Cesium.Cesium3DTileFeature) {
+            //     pickedObject.color = Cesium.Color.YELLOW;
+            // }
+            if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+                const cart = viewer.scene.pickPosition(position);
+                if (Cesium.defined(cart)) {
+                    cartesian = cart
+                }
+            } else {
+                // 方式二，量测坐标
+                const ray = viewer.camera.getPickRay(position);
+                const cart = viewer.scene.globe.pick(ray, viewer.scene);
+                if (Cesium.defined(cart)) {
+                    cartesian = cart
+                }
             }
         } else {
-            // 方式二，量测坐标
             const ray = viewer.camera.getPickRay(position);
             const cart = viewer.scene.globe.pick(ray, viewer.scene);
             if (Cesium.defined(cart)) {
                 cartesian = cart
             }
+
+            return cartesian
         }
-        return cartesian
     }
     // 计算高程点,转成笛卡尔坐标
     _computePoint(firstPoint, lastPoint) {
@@ -222,7 +231,7 @@ export default class DrawViewLine {
                 point: {
                     pixelSize: 10,
                     color: Cesium.Color.GOLD,
-                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                    // disableDepthTestDistance: Number.POSITIVE_INFINITY,
                     heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
                 }
             })
@@ -251,7 +260,7 @@ export default class DrawViewLine {
         const pointSum = 20;  //取样点个数
         const addXTT = Cesium.Math.lerp(startPoint.lon, endPoint.lon, 1.0 / pointSum) - startPoint.lon;
         const addYTT = Cesium.Math.lerp(startPoint.lat, endPoint.lat, 1.0 / pointSum) - startPoint.lat;
-       
+
         var heightArr = [];
         var pts = []
         for (var i = 0; i < pointSum; ++i) {

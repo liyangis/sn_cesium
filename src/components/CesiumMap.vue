@@ -18,7 +18,8 @@
         <li v-show="false" v-on:click="heatMap()">热力图</li>
         <li v-on:click="createProfile()">剖面分析</li>
         <li v-on:click="add3DTiles()">3DTiles</li>
-        <li v-on:click="createViewLine()">通视</li>
+        <li v-on:click="createViewLine()">通视(DEM)</li>
+         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
@@ -239,6 +240,10 @@ export default {
         this.profileObj = null;
         this.profileShow = false;
       }
+      if (this.viewSlightLine) {
+        this.viewSlightLine.remove();
+        this.viewSlightLine = null;
+      }
     },
     heatMap: function() {
       this.heatMapObj = new HeatMap(this.viewer);
@@ -286,16 +291,17 @@ export default {
         endTransform: Cesium.Matrix4.IDENTITY
       });
     },
-    createViewLine: function() {
-      this.viewLine = new DrawViewLine(
+    createViewLine: function(type=0) {
+      this.remove();
+      this.viewSlightLine = new DrawViewLine(
         this.viewer,
+        type,
         {
           lineStyle: {
             width: 2,
-            material: Cesium.Color.CHARTREUSE,
-
+            material: Cesium.Color.CHARTREUSE
             // 是否贴地
-            clampToGround: true,
+            // clampToGround: true,
           }
         },
         data => {

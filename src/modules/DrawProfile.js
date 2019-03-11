@@ -1,12 +1,14 @@
 
 import Cesium from 'cesium/Source/Cesium'
-
-
+/**
+ * 基于DEM地形的剖面分析
+ * 两点经纬度之间高度的变化，并非两点之间屏幕坐标高度的变化
+ * 精度为两点之间20个插值点
+ */
 export default class DrawProfile {
     constructor(viewer, style, callback) {
         this.viewer = viewer
         this.style = style
-
         this.handler = null
         this.tempEntities = []
         this.lineEntities = []
@@ -44,63 +46,50 @@ export default class DrawProfile {
                 this._reDraw()
                 reDraw = false
             }
-            let pickedObject = scene.pick(movement.position)
-            // if (!Cesium.defined(pickedObject) || pickedObject.primitive instanceof Cesium.Polyline || pickedObject.primitive instanceof Cesium.Primitive) {
-            if (true) {
-                // 方法二
-                let ray = viewer.camera.getPickRay(movement.position);
-                let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
-                const xy = movement.position;
-                if (cartesian) {
-                    // this.tempPoints.push(this._car3ToLatLon(cartesian))
-                    if (isDraw) {
-                        // 结束
-                        if (firstPoint) {
-                            lastPoint = cartesian.clone();
+            let cartesian = this._getPosition(movement.position);
+            const xy = movement.position;
+            if (cartesian) {
+                // this.tempPoints.push(this._car3ToLatLon(cartesian))
+                if (isDraw) {
+                    // 结束
+                    if (firstPoint) {
+                        lastPoint = cartesian.clone();
 
-                            if (linePositionList.length === 1) {
-                                linePositionList.push(lastPoint)
+                        if (linePositionList.length === 1) {
+                            linePositionList.push(lastPoint)
 
-                                this.labelPosition = cartesian.clone()
-                            } else if (linePositionList.length > 1) {
-                                linePositionList.length = 0;
-                                linePositionList.push(firstPoint)
-                                linePositionList.push(lastPoint)
-
-                            }
-                            this._drawPoint(lastPoint)
-                            xys.push({ x: xy.x, y: xy.y })
-                            const data = this._getDistanceHeight(linePositionList, xys)
-                            this.callback(data)
-                            
-                            reDraw = true;
-                            // 清除
-                            xys = [];
-                            isDraw = false
-                            this.endDraw = true;
+                            this.labelPosition = cartesian.clone()
+                        } else if (linePositionList.length > 1) {
+                            linePositionList.length = 0;
+                            linePositionList.push(firstPoint)
+                            linePositionList.push(lastPoint)
 
                         }
-
-
-                    } else {
-                        //开始
-                        // if (this.endDraw) return;
-                        firstPoint = cartesian.clone();
-                        this.firstPoint = firstPoint;
-                        this._drawPoint(firstPoint)
-                        isDraw = true
-                        linePositionList.push(firstPoint)
-                        xys.push({ x: xy.x, y: xy.y })
+                        this._drawPoint(lastPoint)
+                        this._getDistanceHeight(linePositionList, this.callback)
+                        reDraw = true;
+                        // 清除
+                        isDraw = false
+                        this.endDraw = true;
                     }
 
+                } else {
+                    //开始
+                    // if (this.endDraw) return;
+                    firstPoint = cartesian.clone();
+                    this.firstPoint = firstPoint;
+                    this._drawPoint(firstPoint)
+                    isDraw = true
+                    linePositionList.push(firstPoint)
+                    xys.push({ x: xy.x, y: xy.y })
                 }
 
             }
+
+
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
         this.handler.setInputAction((movement) => {
-            // 方法二
-            let ray = viewer.camera.getPickRay(movement.endPosition);
-            let cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+            let cartesian = this._getPosition(movement.endPosition);
             if (cartesian) {
                 if (isDraw) {
                     // 开始
@@ -121,9 +110,7 @@ export default class DrawProfile {
             }
 
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
-        this.handler.setInputAction((movement) => {
-
-        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
+        
     }
     // 计算高程点,转成笛卡尔坐标
     _computePoint(firstPoint, lastPoint) {
@@ -186,8 +173,6 @@ export default class DrawProfile {
         this.tempEntities.push(entity)
     }
 
-
-
     // 世界坐标转经纬坐标
     _car3ToLatLon(cartesian) {
         let cartographic = Cesium.Cartographic.fromCartesian(cartesian)
@@ -199,37 +184,17 @@ export default class DrawProfile {
             height: cartographic.height
         }
     }
-    //计算总距离-空间距离
-    _getSpatialDistance(positions) {
-        //空间两点距离计算函数
-
-        var point1cartographic = Cesium.Cartographic.fromCartesian(positions[0]);
-        var point2cartographic = Cesium.Cartographic.fromCartesian(positions[1]);
-        /**根据经纬度计算出距离**/
-        var geodesic = new Cesium.EllipsoidGeodesic();
-        geodesic.setEndPoints(point1cartographic, point2cartographic);
-        var s = geodesic.surfaceDistance;
-        //console.log(Math.sqrt(Math.pow(distance, 2) + Math.pow(endheight, 2)));
-        //返回两点之间的距离
-        var d = Math.sqrt(Math.pow(s, 2) + Math.pow(point2cartographic.height - point1cartographic.height, 2));
-
-        // return distance.toFixed(2);
-        return {
-            d_h: Math.abs(point2cartographic.height - point1cartographic.height),
-            d_flat: s,
-            d_spatial: d
-        }
-
-    }
-
-    _getDistanceHeight(points, xys) {
-
+   
+    /**
+     * 
+     * @param {起点终点笛卡尔坐标集合} points 
+     * @param {起点终点屏幕坐标} xys 
+     */
+    _getDistanceHeight1(points, xys) {
         // 经纬度
         const startPoint = this._car3ToLatLon(points[0]);
         const endPoint = this._car3ToLatLon(points[1]);
         const pointSum = 10;  //取样点个数
-        const addXTT = Cesium.Math.lerp(startPoint.lon, endPoint.lon, 1.0 / pointSum) - startPoint.lon;
-        const addYTT = Cesium.Math.lerp(startPoint.lat, endPoint.lat, 1.0 / pointSum) - startPoint.lat;
         //  屏幕坐标
         const [leftXY, rightXY] = xys;
         var addX = Cesium.Math.lerp(leftXY.x, rightXY.x, 1.0 / pointSum) - leftXY.x;
@@ -252,6 +217,71 @@ export default class DrawProfile {
 
         }
         return heightArr;
+    }
+    // 取点坐标
+    _getPosition(position, type = 0) {
+        const viewer = this.viewer;
+        const scene = viewer.scene;
+        let cartesian = null;
+        if (type) {
+            // 方式三，模型坐标
+            const pickedObject = scene.pick(position);
+            // if (pickedObject instanceof Cesium.Cesium3DTileFeature) {
+            //     pickedObject.color = Cesium.Color.YELLOW;
+            // }
+            if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+                const cart = viewer.scene.pickPosition(position);
+                if (Cesium.defined(cart)) {
+                    cartesian = cart
+                }
+            } else {
+                // 方式二，量测坐标
+                const ray = viewer.camera.getPickRay(position);
+                const cart = viewer.scene.globe.pick(ray, viewer.scene);
+                if (Cesium.defined(cart)) {
+                    cartesian = cart
+                }
+            }
+        } else {
+            const ray = viewer.camera.getPickRay(position);
+            const cart = viewer.scene.globe.pick(ray, viewer.scene);
+            if (Cesium.defined(cart)) {
+                cartesian = cart
+            }
+
+            return cartesian
+        }
+    }
+    _getDistanceHeight(points, callback) {
+
+        // 经纬度
+        const startPoint = this._car3ToLatLon(points[0]);
+        const endPoint = this._car3ToLatLon(points[1]);
+        const pointSum = 20;  //取样点个数
+        var heightArr = [];
+        var pts = []
+        for (var i = 0; i < pointSum; ++i) {
+            var offset = i / (pointSum - 1);
+            var x = Cesium.Math.lerp(startPoint.lon, endPoint.lon, offset);
+            var y = Cesium.Math.lerp(startPoint.lat, endPoint.lat, offset);
+            pts.push([x, y]);
+        }
+
+        // Query the terrain height of two Cartographic positions
+        var terrainProvider = Cesium.createWorldTerrain();
+        var positions = pts.map(d => Cesium.Cartographic.fromDegrees(...d))
+        // 根据地形计算某经纬度点的高度
+        var promise = Cesium.sampleTerrainMostDetailed(terrainProvider, positions);
+        Cesium.when(promise, function (updatedPositions) {
+            // positions[0].height and positions[1].height have been updated.
+            // updatedPositions is just a reference to positions.
+            // console.log(...positions)
+            heightArr = positions.map(d => d.height)
+            if (callback) {
+                callback(heightArr)
+            }
+        });
+
     }
     _test(points) {
         const viewer = this.viewer;

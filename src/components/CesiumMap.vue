@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <div id="cesiumContainer"></div>
+    <canvas id="myCanvas"></canvas>
     <!-- <div id="menu">
             <p>
               <button v-on:click="DrawLineKSY()">可视域</button>
@@ -15,14 +16,16 @@
         <li :class="selected?'btn-sel':'btn'" v-on:click="measureDistance()">距离</li>
         <li v-on:click="measureArea()">面积</li>
         <li v-on:click="remove()">清除</li>
-        <li v-show="false" v-on:click="heatMap()">热力图</li>
+        <li v-show="true" v-on:click="heatMap()">热力图</li>
         <li v-on:click="createProfile()">剖面分析</li>
         <li v-on:click="add3DTiles()">3DTiles</li>
         <li v-on:click="createViewLine()">通视(DEM)</li>
-         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
+        <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
+        <li v-on:click="submergenceAnalysis()">淹没分析</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
+    <SubmergAnalysis v-show="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
     <div id="credit"></div>
     <div id="latlng_show">
       <div class="item">
@@ -61,11 +64,11 @@ import HeatMap from "../modules/heatmap";
 
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
-
 import DrawViewLine from "../modules/DrawView";
+
+import SubmergAnalysis from "./SubmergAnalysis.vue"
 export default {
   name: "CesiumMap",
-
   mounted: function() {
     // buildModuleUrl.setBaseUrl("../static/cesium/");
     buildModuleUrl.setBaseUrl("../cesium/");
@@ -80,7 +83,15 @@ export default {
       homeButton: false,
       selectionIndicator: false,
       creditContainer: "credit",
-      terrainProvider: Cesium.createWorldTerrain()
+      // terrainProvider: Cesium.createWorldTerrain()
+      terrainProvider: new Cesium.CesiumTerrainProvider({
+        url: "http://localhost:8080/o_lab",
+        requestVertexNormals: true
+      }),
+      // // 使用离线地图
+      // imageryProvider: Cesium.createTileMapServiceImageryProvider({
+      //   url: "../Cesium/Assets/Textures/NaturalEarthII"
+      // })
     };
     this.viewer = new Viewer("cesiumContainer", opts);
     var viewer = this.viewer;
@@ -119,11 +130,13 @@ export default {
       lat_String: "",
       alti_String: "",
       profileShow: false,
-      profileData: null
+      profileData: null,
+      submergAna:false
     };
   },
   components: {
-    ProfileChart
+    ProfileChart,
+    SubmergAnalysis
   },
   methods: {
     measureTriangle: function() {
@@ -269,10 +282,27 @@ export default {
     },
     add3DTiles: function() {
       // Load the NYC buildings tileset
-      var tileset = new Cesium.Cesium3DTileset({
-        url: Cesium.IonResource.fromAssetId(5741)
-      });
-      this.viewer.scene.primitives.add(tileset);
+      if (!this.tilesetObj) {
+        var tileset = new Cesium.Cesium3DTileset({
+          url: Cesium.IonResource.fromAssetId(5741)
+        });
+        tileset.style = new Cesium.Cesium3DTileStyle({
+          color: {
+            conditions: [
+              ["${height} >= 300", "rgba(45, 0, 75, 0.5)"],
+              ["${height} >= 200", "rgb(102, 71, 151)"],
+              ["${height} >= 100", "rgb(170, 162, 204)"],
+              ["${height} >= 50", "rgb(224, 226, 238)"],
+              ["${height} >= 25", "rgb(252, 230, 200)"],
+              ["${height} >= 10", "rgb(248, 176, 87)"],
+              ["${height} >= 5", "rgb(198, 106, 11)"],
+              ["true", "rgb(127, 59, 8)"]
+            ]
+          }
+        });
+        this.viewer.scene.primitives.add(tileset);
+        this.tilesetObj = tileset;
+      }
 
       // Set the initial camera view to look at Manhattan
       var initialPosition = Cesium.Cartesian3.fromDegrees(
@@ -291,7 +321,7 @@ export default {
         endTransform: Cesium.Matrix4.IDENTITY
       });
     },
-    createViewLine: function(type=0) {
+    createViewLine: function(type = 0) {
       this.remove();
       this.viewSlightLine = new DrawViewLine(
         this.viewer,
@@ -309,6 +339,9 @@ export default {
           this.profileData = data;
         }
       );
+    },
+    submergenceAnalysis: function() {
+      this.submergAna=!this.submergAna;
     },
     showPosition: function() {
       let that = this;

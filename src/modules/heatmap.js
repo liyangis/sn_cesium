@@ -1,4 +1,6 @@
+// import Cesium from 'cesium/Source/Cesium'
 // import CesiumHeatmap from '../modules/CesiumHeatmap'
+
 // export default class HeatMap {
 //     constructor(viewer, data = null) {
 //         this.viewer = viewer;
@@ -11,7 +13,7 @@
 //         };
 
 //         // init heatmap
-//         let heatMap = CesiumHeatmap.create(
+//         let heatMap = Cesium.CesiumHeatmap.create(
 //             viewer, // your cesium viewer
 //             bounds, // bounds for heatmap layer
 //             {
@@ -33,10 +35,8 @@
 //         heatMap.setWGS84Data(valueMin, valueMax, data);
 //         return heatMap;
 //     }
-
-
-
 // }
+// 方式二
 import Cesium from 'cesium/Source/Cesium'
 export default class HeatMap {
     constructor(viewer, data = null) {
@@ -60,7 +60,7 @@ export default class HeatMap {
             {
                 // heatmap.js options go here
                 // maxOpacity: 0.3
-                backgroundColor: "rgba(0,0,0,0)",
+                backgroundColor: "rgba(255,0,0,129)",
                 radius: 50,
                 maxOpacity: .5,
                 minOpacity: 0,
@@ -75,7 +75,21 @@ export default class HeatMap {
 
         // add data to heatmap
         heatMap.setWGS84Data(valueMin, valueMax, data);
+        // 因为大片都是空的啊，所以只是一小块数据
+        this.viewer.zoomTo(heatMap._layer);
+        const viewer=this.viewer
+        // 更新数据使用 setData()方法
+        data.forEach(element => {
+            viewer.entities.add({
+                position:Cesium.Cartesian3.fromDegrees(element.x,element.y),
+                point:{
+                    pixelSize:20
+                }
+            })
+
+        });
         this.viewer.zoomTo(this.viewer.entities);
+     
     }
 
 }
@@ -420,11 +434,11 @@ CHInstance.prototype.updateLayer = function () {
 
         // Work around issue with material rendering in Cesium
         // provided by https://github.com/criis
-        material = new Cesium.ImageMaterialProperty({
+        let material = new Cesium.ImageMaterialProperty({
             image: this._heatmap._renderer.canvas,
         });
         if (Cesium.VERSION >= "1.21") {
-            material.transparent = true;
+            // material.transparent = true;
         } else if (Cesium.VERSION >= "1.16") {
             material.alpha = 0.99;
         }
@@ -433,9 +447,11 @@ CHInstance.prototype.updateLayer = function () {
             show: true,
             rectangle: {
                 coordinates: this._rectangle,
-                material: material
+                material: material,
             }
+           
         });
+        
     } else {
         if (this._layer) {
             this._cesium.scene.imageryLayers.remove(this._layer);
@@ -747,7 +763,48 @@ CHInstance.prototype.updateLayer = function () {
                 if (b + d > f) {
                     d = f - b
                 }
+                // var k = this.shadowCtx.getImageData(a, b, c, d);
+                // var l = k.data;
+                // var m = l.length;
+                // var n = this._palette;
+                // for (var o = 3; o < m; o += 4) {
+                //     var p = l[o];
+                //     var q = p * 4;
+                //     if (!q) {
+                //         continue
+                //     }
+                //     var r;
+                //     if (g > 0) {
+                //         r = g
+                //     } else {
+                //         if (p < h) {
+                //             if (p < i) {
+                //                 r = i
+                //             } else {
+                //                 r = p
+                //             }
+                //         } else {
+                //             r = h
+                //         }
+                //     }
+                //     l[o - 3] = n[q];
+                //     l[o - 2] = n[q + 1];
+                //     l[o - 1] = n[q + 2];
+                //     l[o] = j ? n[q + 3] : r
+                // }
+                // var imgData = this.shadowCtx.createImageData(100, 100);
+                // for (var ily = 0; ily < imgData.data.length; ily += 4) {
+                //     imgData.data[ily + 0] = 255;
+                //     imgData.data[ily + 1] = 0;
+                //     imgData.data[ily + 2] = 0;
+                //     imgData.data[ily + 3] = 255;
+                // }
+                // this.ctx.putImageData(imgData, a, b);
+                // 反转颜色
+
+
                 var k = this.shadowCtx.getImageData(a, b, c, d);
+                var imgData = k;
                 var l = k.data;
                 var m = l.length;
                 var n = this._palette;
@@ -771,13 +828,15 @@ CHInstance.prototype.updateLayer = function () {
                             r = h
                         }
                     }
-                    l[o - 3] = n[q];
-                    l[o - 2] = n[q + 1];
-                    l[o - 1] = n[q + 2];
-                    l[o] = j ? n[q + 3] : r
+                    imgData.data[o - 3] = n[q];
+                    imgData.data[o - 2] = n[q + 1];
+                    imgData.data[o - 1] = n[q + 2];
+                    imgData.data[o] = j ? n[q + 3] : r
                 }
-                k.data = l;
-                this.ctx.putImageData(k, a, b);
+                this.ctx.putImageData(imgData, a, b);
+                // 原始
+                // k.data = l;
+                // this.ctx.putImageData(k, a, b);
                 this._renderBoundaries = [1e3, 1e3, 0, 0]
             }, getValueAt: function (a) {
                 var b;

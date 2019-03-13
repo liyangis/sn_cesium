@@ -268,7 +268,10 @@ export default class DrawProfile {
         }
 
         // Query the terrain height of two Cartographic positions
-        var terrainProvider = Cesium.createWorldTerrain();
+        // var terrainProvider = Cesium.createWorldTerrain();
+        var terrainProvider=new Cesium.CesiumTerrainProvider({
+            url: "http://localhost:8080/o_lab"
+          })
         var positions = pts.map(d => Cesium.Cartographic.fromDegrees(...d))
         // 根据地形计算某经纬度点的高度
         var promise = Cesium.sampleTerrainMostDetailed(terrainProvider, positions);

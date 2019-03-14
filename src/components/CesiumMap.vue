@@ -25,7 +25,7 @@
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
-    <SubmergAnalysis v-show="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
+    <SubmergAnalysis v-if="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
     <div id="credit"></div>
     <div id="latlng_show">
       <div class="item">

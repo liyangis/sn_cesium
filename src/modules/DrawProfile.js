@@ -295,7 +295,6 @@ export default class DrawProfile {
             cartesians[i] = Cesium.Cartesian3.lerp(points[0], points[1], offset, new Cesium.Cartesian3());
         }
 
-
         viewer.scene.clampToHeightMostDetailed(cartesians).then(function (clampedCartesians) {
             for (var i = 0; i < count; ++i) {
                 viewer.entities.add({
@@ -321,8 +320,6 @@ export default class DrawProfile {
                 }
             });
         }).then((d) => {
-            console.log(d);
-            //  return heightArr;
         });
     }
 

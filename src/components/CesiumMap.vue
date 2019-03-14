@@ -21,6 +21,7 @@
         <li v-on:click="add3DTiles()">3DTiles</li>
         <li v-on:click="createViewLine()">通视(DEM)</li>
         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
+        <li v-on:click="createViewShed()">可视域(DEM)</li>
         <li v-on:click="submergenceAnalysis()">淹没分析</li>
       </ul>
     </div>
@@ -65,8 +66,9 @@ import HeatMap from "../modules/heatmap";
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
 import DrawViewLine from "../modules/DrawView";
+import ViewShed3D from "../modules/viewshed_3dtiles/ViewShed3D";
 
-import SubmergAnalysis from "./SubmergAnalysis.vue"
+import SubmergAnalysis from "./SubmergAnalysis.vue";
 export default {
   name: "CesiumMap",
   mounted: function() {
@@ -87,7 +89,7 @@ export default {
       terrainProvider: new Cesium.CesiumTerrainProvider({
         url: "http://localhost:8080/o_lab",
         requestVertexNormals: true
-      }),
+      })
       // // 使用离线地图
       // imageryProvider: Cesium.createTileMapServiceImageryProvider({
       //   url: "../Cesium/Assets/Textures/NaturalEarthII"
@@ -131,7 +133,7 @@ export default {
       alti_String: "",
       profileShow: false,
       profileData: null,
-      submergAna:false
+      submergAna: false
     };
   },
   components: {
@@ -341,7 +343,12 @@ export default {
       );
     },
     submergenceAnalysis: function() {
-      this.submergAna=!this.submergAna;
+      this.submergAna = !this.submergAna;
+    },
+    createViewShed: function() {
+      if (!this.viewShedObj) {
+        this.viewShedObj = new ViewShed3D(this.viewer);
+      }
     },
     showPosition: function() {
       let that = this;

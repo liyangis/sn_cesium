@@ -1,60 +1,42 @@
 
-// 方式二
 import Cesium from 'cesium/Source/Cesium'
 export default class HeatMap {
-    constructor(viewer, data = null, bounds = null) {
+    constructor(viewer, data = null, bounds = null, opts = null) {
         this.viewer = viewer;
         this.data = data;
-        this.initHeatMap(bounds,data);
+        this.initHeatMap(bounds, data, opts);
     }
-    initHeatMap(bounds,data) {
+    initHeatMap(bounds, data, opts = null) {
         // init heatmap
         let heatMap = window.CesiumHeatmap.create(
             this.viewer, // your cesium viewer
             bounds, // bounds for heatmap layer
-            {
-                // heatmap.js options go here
-                // maxOpacity: 0.3
+            opts ? opts : {
                 backgroundColor: "rgba(255,0,0,0)",
-                radius: 150,
-                maxOpacity: .3,
+                radius: 50,
+                maxOpacity: .93,
                 minOpacity: 0,
                 blur: .75
             }
         );
-        this.heatMap=heatMap
-
-        // random example data
-        // let data = [{ "x": 147.1383442264, "y": -41.4360048372, "value": 76 }, { "x": 147.1384363011, "y": -41.4360298848, "value": 63 }, { "x": 147.138368102, "y": -41.4358360603, "value": 1 }, { "x": 147.1385627739, "y": -41.4358799123, "value": 21 }, { "x": 147.1385138501, "y": -41.4359327669, "value": 28 }, { "x": 147.1385031219, "y": -41.4359730105, "value": 41 }, { "x": 147.1384127393, "y": -41.435928255, "value": 75 }, { "x": 147.1384551136, "y": -41.4359450132, "value": 3 }, { "x": 147.1384927196, "y": -41.4359158649, "value": 45 }, { "x": 147.1384938639, "y": -41.4358498311, "value": 45 }, { "x": 147.1385183299, "y": -41.4360213794, "value": 93 }, { "x": 147.1384007925, "y": -41.4359860133, "value": 46 }, { "x": 147.1383604844, "y": -41.4358298672, "value": 54 }, { "x": 147.13851025, "y": -41.4359098303, "value": 39 }, { "x": 147.1383874733, "y": -41.4358511035, "value": 34 }, { "x": 147.1384981796, "y": -41.4359355403, "value": 81 }, { "x": 147.1384504107, "y": -41.4360332348, "value": 39 }, { "x": 147.1385582664, "y": -41.4359788335, "value": 20 }, { "x": 147.1383967364, "y": -41.4360581999, "value": 35 }, { "x": 147.1383839615, "y": -41.436016316, "value": 47 }, { "x": 147.1384082712, "y": -41.4358423338, "value": 36 }, { "x": 147.1385092651, "y": -41.4358577623, "value": 69 }, { "x": 147.138360356, "y": -41.436046789, "value": 90 }, { "x": 147.138471893, "y": -41.4359184292, "value": 88 }, { "x": 147.1385605689, "y": -41.4360271359, "value": 81 }, { "x": 147.1383585714, "y": -41.4359362476, "value": 32 }, { "x": 147.1384939114, "y": -41.4358844253, "value": 67 }, { "x": 147.138466724, "y": -41.436019121, "value": 17 }, { "x": 147.1385504355, "y": -41.4360614056, "value": 49 }, { "x": 147.1383883832, "y": -41.4358733544, "value": 82 }, { "x": 147.1385670669, "y": -41.4359650236, "value": 25 }, { "x": 147.1383416534, "y": -41.4359310876, "value": 82 }, { "x": 147.138525285, "y": -41.4359394661, "value": 66 }, { "x": 147.1385487719, "y": -41.4360137656, "value": 73 }, { "x": 147.1385496029, "y": -41.4359187277, "value": 73 }, { "x": 147.1383989222, "y": -41.4358556562, "value": 61 }, { "x": 147.1385499424, "y": -41.4359149305, "value": 67 }, { "x": 147.138404523, "y": -41.4359563326, "value": 90 }, { "x": 147.1383883675, "y": -41.4359794855, "value": 78 }, { "x": 147.1383967187, "y": -41.435891185, "value": 15 }, { "x": 147.1384610005, "y": -41.4359044797, "value": 15 }, { "x": 147.1384688489, "y": -41.4360396127, "value": 91 }, { "x": 147.1384431875, "y": -41.4360684409, "value": 8 }, { "x": 147.1385411067, "y": -41.4360645847, "value": 42 }, { "x": 147.1385237178, "y": -41.4358843181, "value": 31 }, { "x": 147.1384406464, "y": -41.4360003831, "value": 51 }, { "x": 147.1384679169, "y": -41.4359950456, "value": 96 }, { "x": 147.1384194314, "y": -41.4358419739, "value": 22 }, { "x": 147.1385049792, "y": -41.4359574813, "value": 44 }, { "x": 147.1384097378, "y": -41.4358598672, "value": 82 }, { "x": 147.1384993219, "y": -41.4360352975, "value": 84 }, { "x": 147.1383640499, "y": -41.4359839518, "value": 81 }];
-        let values=data.map(d=>d.value)
+        this.heatMap = heatMap
+        let values = data.map(d => d.value)
         let valueMin = Math.min(...values);
         let valueMax = Math.max(...values);
 
         // add data to heatmap
         heatMap.setWGS84Data(valueMin, valueMax, data);
-        // 因为大片都是空的啊，所以只是一小块数据
+        // 因为大片都是空的啊，所以只是一小块数据,一个坑，如果范围小，会导致绘制出错
         this.viewer.zoomTo(heatMap._layer);
-        const viewer = this.viewer
-        // // 更新数据使用 setData()方法
-        // data.forEach(element => {
-        //     viewer.entities.add({
-        //         position: Cesium.Cartesian3.fromDegrees(element.x, element.y,element.value),
-        //         point: {
-        //             pixelSize: 20
-        //         }
-        //     })
-
-        // });
-        // this.viewer.zoomTo(this.viewer.entities);
 
     }
     // 控制显示隐藏
-    show(s){
+    show(s) {
         this.heatMap.show(s)
     }
     // 更新数据源
-    update(data){
-        let values=data.map(d=>d.value)
+    update(data) {
+        let values = data.map(d => d.value)
         let valueMin = Math.min(...values);
         let valueMax = Math.max(...values);
 
@@ -735,46 +717,6 @@ CHInstance.prototype.updateLayer = function () {
                 if (b + d > f) {
                     d = f - b
                 }
-                // var k = this.shadowCtx.getImageData(a, b, c, d);
-                // var l = k.data;
-                // var m = l.length;
-                // var n = this._palette;
-                // for (var o = 3; o < m; o += 4) {
-                //     var p = l[o];
-                //     var q = p * 4;
-                //     if (!q) {
-                //         continue
-                //     }
-                //     var r;
-                //     if (g > 0) {
-                //         r = g
-                //     } else {
-                //         if (p < h) {
-                //             if (p < i) {
-                //                 r = i
-                //             } else {
-                //                 r = p
-                //             }
-                //         } else {
-                //             r = h
-                //         }
-                //     }
-                //     l[o - 3] = n[q];
-                //     l[o - 2] = n[q + 1];
-                //     l[o - 1] = n[q + 2];
-                //     l[o] = j ? n[q + 3] : r
-                // }
-                // var imgData = this.shadowCtx.createImageData(100, 100);
-                // for (var ily = 0; ily < imgData.data.length; ily += 4) {
-                //     imgData.data[ily + 0] = 255;
-                //     imgData.data[ily + 1] = 0;
-                //     imgData.data[ily + 2] = 0;
-                //     imgData.data[ily + 3] = 255;
-                // }
-                // this.ctx.putImageData(imgData, a, b);
-                // 反转颜色
-
-
                 var k = this.shadowCtx.getImageData(a, b, c, d);
                 var imgData = k;
                 var l = k.data;
@@ -806,7 +748,7 @@ CHInstance.prototype.updateLayer = function () {
                     imgData.data[o] = j ? n[q + 3] : r
                 }
                 this.ctx.putImageData(imgData, a, b);
-                // 原始
+                // 原始,vue环境报错，已修正
                 // k.data = l;
                 // this.ctx.putImageData(k, a, b);
                 this._renderBoundaries = [1e3, 1e3, 0, 0]

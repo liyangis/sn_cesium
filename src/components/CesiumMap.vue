@@ -95,15 +95,7 @@ export default {
   },
   methods: {
     measureTriangle: function() {
-      if (this.measureAre) {
-        this.measureAre.remove();
-        this.measureAre = null;
-      }
-      if (this.measureDis) {
-        this.measureDis.remove();
-        this.measureDis = null;
-      }
-
+      this.remove();
       this.measureTri = new MeasureTriangle(
         this.viewer,
         false,
@@ -195,7 +187,36 @@ export default {
       }
     },
     heatMap: function() {
-      this.heatMapObj = new HeatMap(this.viewer);
+      const data = [];
+      //  west: -74.013069,
+      //     east:  40.7014,
+      //      south: -73.9957,
+      //      north: 40.7265
+      const bounds = {
+        // west: -74.011233844,
+        // east: -73.0056899,
+        // south: 40.75606916,
+        // north: 40.7782929
+        west: -74.013069,
+        south: 40.7014,
+        east: -73.9957,
+        north: 40.7265
+      };
+
+      for (let index = 0; index < 100; index++) {
+        const element = {
+          x: bounds.west + (bounds.east - bounds.west) * Math.random(),
+          y: bounds.south + (bounds.north - bounds.south) * Math.random(),
+          value: Math.random() * 100
+        };
+        data.push(element);
+      }
+      console.log(JSON.stringify(data));
+      if (!this.heatMapObj) {
+        this.heatMapObj = new HeatMap(this.viewer, data, bounds);
+      } else {
+        this.viewer.zoomto(this.heatMapObj.heatMap._layer)
+      }
     },
     createProfile: function() {
       this.profileShow = false;
@@ -251,8 +272,7 @@ export default {
       if (!this.viewShedObj) {
         this.viewShedObj = new ViewShed3D(this.viewer);
       }
-    },
-
+    }
   }
 };
 </script>

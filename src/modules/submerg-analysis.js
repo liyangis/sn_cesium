@@ -111,6 +111,7 @@ export default class SubmergenceAnalysis {
                 south: 39.9912,
                 north: 40.0381
             }
+            
             const positions_cartesian = this._getPoints(bounds.east, bounds.west, bounds.south, bounds.north)
             this._getHeights(positions_cartesian, this.extrudedHeight, (d) => {
                 this.heatMapObj = new HeatMap(this.viewer, d, bounds);
@@ -165,7 +166,7 @@ export default class SubmergenceAnalysis {
             this.viewer.entities.add({
                 polygon: {
                     hierarchy: {},
-                    material: new Cesium.Color.fromBytes(64, 157, 253, 150),
+                    material: new Cesium.Color.fromBytes(64, 157, 253, 100),
                     perPositionHeight: true,
 
                 }
@@ -271,7 +272,7 @@ export default class SubmergenceAnalysis {
             }
         }
     }
-   
+
     // 切割一部分地形
     loadGrandCanyon() {
         var globe = this.viewer.scene.globe;

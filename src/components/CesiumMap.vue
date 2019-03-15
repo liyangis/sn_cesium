@@ -28,26 +28,7 @@
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
     <SubmergAnalysis v-if="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
     <div id="credit"></div>
-    <div id="latlng_show">
-      <div class="item">
-        <font size="3" color="white">
-          经度：
-          <span id="longitude_show">{{log_String}}</span>
-        </font>
-      </div>
-      <div class="item">
-        <font size="3" color="white">
-          纬度：
-          <span id="latitude_show">{{lat_String}}</span>
-        </font>
-      </div>
-      <div class="item">
-        <font size="3" color="white">
-          视角高：
-          <span id="altitude_show">{{alti_String}}</span>km
-        </font>
-      </div>
-    </div>
+    <PositionMouse v-bind:viewer="viewer"></PositionMouse>
   </div>
 </template>
 
@@ -56,13 +37,12 @@ import Cesium from "cesium/Source/Cesium";
 import Viewer from "cesium/Source/Widgets/Viewer/Viewer";
 import buildModuleUrl from "cesium/Source/Core/buildModuleUrl";
 import "cesium/Source/Widgets/widgets.css";
-
+import Base from "../modules/Base";
 import MeasureDistance from "../modules/MeasureDistance";
 import MeasureArea from "../modules/MeasureArea";
 import MeasureTriangle from "../modules/MeasureTriangle";
-// import Measure from "../modules/measure";
 import HeatMap from "../modules/heatmap";
-
+import PositionMouse from "./PositionMouse.vue";
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
 import DrawViewLine from "../modules/DrawView";
@@ -85,65 +65,36 @@ export default {
       homeButton: false,
       selectionIndicator: false,
       creditContainer: "credit",
+      shouldAnimate: true,
       // terrainProvider: Cesium.createWorldTerrain()
       terrainProvider: new Cesium.CesiumTerrainProvider({
         url: "http://localhost:8080/o_lab",
         requestVertexNormals: true
       })
-      // // 使用离线地图
-      // imageryProvider: Cesium.createTileMapServiceImageryProvider({
-      //   url: "../Cesium/Assets/Textures/NaturalEarthII"
-      // })
     };
     this.viewer = new Viewer("cesiumContainer", opts);
     var viewer = this.viewer;
+    this.base = new Base(viewer);
+    this.base.showBeijingPositon();
     // 深度检测
     // viewer.scene.globe.depthTestAgainstTerrain = true;
-    // 实时坐标
-    this.showPosition();
-    // 初始位置
-    // this.viewer.camera.setView({
-    //   destination: Cesium.Cartesian3.fromDegrees(115.911245, 39.7667, 1500.0),
-    //   orientation: {
-    //     heading: Cesium.Math.toRadians(175.0),
-    //     pitch: Cesium.Math.toRadians(-35.0),
-    //     roll: 0.0
-    //   }
-    // });
-    //设置相机位置、视角
-    viewer.scene.camera.setView({
-      destination: new Cesium.Cartesian3(
-        -1206939.1925299785,
-        5337998.241228442,
-        3286279.2424502545
-      ),
-      orientation: {
-        heading: 1.4059101895600987,
-        pitch: -0.20917672793046682,
-        roll: 2.708944180085382e-13
-      }
-    });
   },
   data() {
     return {
       viewer: {},
       selected: false,
-      log_String: "",
-      lat_String: "",
-      alti_String: "",
       profileShow: false,
       profileData: null,
       submergAna: false
     };
   },
   components: {
+    PositionMouse,
     ProfileChart,
     SubmergAnalysis
   },
   methods: {
     measureTriangle: function() {
-      // Measure.measureTriangle(this.viewer, null);
-
       if (this.measureAre) {
         this.measureAre.remove();
         this.measureAre = null;
@@ -173,16 +124,7 @@ export default {
       );
     },
     measureDistance: function() {
-      // Measure.measureLineSpace(this.viewer, null);
-      if (this.measureAre) {
-        this.measureAre.remove();
-        this.measureAre = null;
-      }
-      if (this.measureTri) {
-        this.measureTri.remove();
-        this.measureTri = null;
-      }
-
+      this.remove();
       this.measureDis = new MeasureDistance(
         this.viewer,
         false,
@@ -205,15 +147,7 @@ export default {
     },
 
     measureArea: function() {
-      //  Measure.measureAreaSpace(this.viewer, null);
-      if (this.measureDis) {
-        this.measureDis.remove();
-        this.measureDis = null;
-      }
-      if (this.measureTri) {
-        this.measureTri.remove();
-        this.measureTri = null;
-      }
+      this.remove();
       this.measureAre = new MeasureArea(this.viewer, false, {
         labelStyle: {
           pixelOffset: new Cesium.Cartesian2(0.0, -30),
@@ -285,43 +219,11 @@ export default {
     add3DTiles: function() {
       // Load the NYC buildings tileset
       if (!this.tilesetObj) {
-        var tileset = new Cesium.Cesium3DTileset({
-          url: Cesium.IonResource.fromAssetId(5741)
-        });
-        tileset.style = new Cesium.Cesium3DTileStyle({
-          color: {
-            conditions: [
-              ["${height} >= 300", "rgba(45, 0, 75, 0.5)"],
-              ["${height} >= 200", "rgb(102, 71, 151)"],
-              ["${height} >= 100", "rgb(170, 162, 204)"],
-              ["${height} >= 50", "rgb(224, 226, 238)"],
-              ["${height} >= 25", "rgb(252, 230, 200)"],
-              ["${height} >= 10", "rgb(248, 176, 87)"],
-              ["${height} >= 5", "rgb(198, 106, 11)"],
-              ["true", "rgb(127, 59, 8)"]
-            ]
-          }
-        });
+        var tileset = this.base.get3Dtiles();
         this.viewer.scene.primitives.add(tileset);
         this.tilesetObj = tileset;
       }
-
-      // Set the initial camera view to look at Manhattan
-      var initialPosition = Cesium.Cartesian3.fromDegrees(
-        -74.01051302800248,
-        40.70414333714821,
-        353
-      );
-      var initialOrientation = new Cesium.HeadingPitchRoll.fromDegrees(
-        21.27879878293835,
-        -21.34390550872461,
-        0.0716951918898415
-      );
-      this.viewer.scene.camera.setView({
-        destination: initialPosition,
-        orientation: initialOrientation,
-        endTransform: Cesium.Matrix4.IDENTITY
-      });
+      this.base.show3DtilesPosition();
     },
     createViewLine: function(type = 0) {
       this.remove();
@@ -350,37 +252,7 @@ export default {
         this.viewShedObj = new ViewShed3D(this.viewer);
       }
     },
-    showPosition: function() {
-      let that = this;
-      //具体事件的实现
-      var ellipsoid = this.viewer.scene.globe.ellipsoid;
 
-      var canvas = this.viewer.scene.canvas;
-      var handler = new Cesium.ScreenSpaceEventHandler(canvas);
-      handler.setInputAction(function(movement) {
-        //捕获椭球体，将笛卡尔二维平面坐标转为椭球体的笛卡尔三维坐标，返回球体表面的点
-        var cartesian = that.viewer.camera.pickEllipsoid(
-          movement.endPosition,
-          ellipsoid
-        );
-        if (cartesian) {
-          //将笛卡尔三维坐标转为地图坐标（弧度）
-          var cartographic = that.viewer.scene.globe.ellipsoid.cartesianToCartographic(
-            cartesian
-          );
-          //将地图坐标（弧度）转为十进制的度数
-          that.lat_String = Cesium.Math.toDegrees(
-            cartographic.latitude
-          ).toFixed(4);
-          that.log_String = Cesium.Math.toDegrees(
-            cartographic.longitude
-          ).toFixed(4);
-          that.alti_String = (
-            that.viewer.camera.positionCartographic.height / 1000
-          ).toFixed(2);
-        }
-      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-    }
   }
 };
 </script>
@@ -434,22 +306,6 @@ ul li {
 
 .btn {
   border: 0px;
-}
-
-#latlng_show {
-  width: 340px;
-  height: 30px;
-  position: absolute;
-  bottom: 40px;
-  right: 20px;
-  z-index: 1;
-  font-size: 15px;
-}
-
-#latlng_show .item {
-  width: 100px;
-  height: 30px;
-  float: left;
 }
 
 #menu {

@@ -78,6 +78,8 @@ export default {
     this.base.showBeijingPositon();
     // 深度检测
     // viewer.scene.globe.depthTestAgainstTerrain = true;
+    // 测试飞机可视域
+    this.base.test()
   },
   data() {
     return {
@@ -193,10 +195,6 @@ export default {
       //      south: -73.9957,
       //      north: 40.7265
       const bounds = {
-        // west: -74.011233844,
-        // east: -73.0056899,
-        // south: 40.75606916,
-        // north: 40.7782929
         west: -74.013069,
         south: 40.7014,
         east: -73.9957,

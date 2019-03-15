@@ -119,13 +119,19 @@ export default class Base {
     camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
     camera1.frustum.near = 1.0;
     camera1.frustum.far = 200;
-    viewer.scene.primitives.add(
+    let pri=viewer.scene.primitives.add(
       new Cesium.DebugCameraPrimitive({
         camera: camera1,
         color: Cesium.Color.YELLOW,
         updateOnChange: false
+
       })
     );
+    // 动态更改camera1的位置
+    setTimeout(()=>{
+      const position=camera1.position
+      camera1.position=new Cesium.Cartesian3(position.x+10,position.y,position.z)
+    },5000)
   }
 
 
@@ -135,3 +141,59 @@ export var BaseFunction = (function () {
 
   return base
 })()
+
+// // Click the projection picker to switch between orthographic and perspective projections.
+// var viewer = new Cesium.Viewer('cesiumContainer', {
+//   projectionPicker : true
+// });
+
+// // start with orthographic projection
+// viewer.projectionPicker.viewModel.switchToOrthographic();
+
+// var position = Cesium.Cartesian3.fromDegrees(-123.0744619, 44.0503706, 0.0);
+// var hpr = new Cesium.HeadingPitchRoll(Cesium.Math.toRadians(135), 0.0, 0.0);
+// var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
+
+// var entity = viewer.entities.add({
+//   position : position,
+//   orientation : orientation,
+//   model : {
+//       uri : '../../SampleData/models/CesiumMilkTruck/CesiumMilkTruck-kmc.glb',
+//       minimumPixelSize : 128,
+//       maximumScale : 20000
+//   }
+// });
+// var frustum = new Cesium.PerspectiveOffCenterFrustum({
+//   left : -1.0,
+//   right : 1.0,
+//   top : 1.0,
+//   bottom : -1.0,
+//   near : 1.0,
+//   far : 100.0
+// });
+// var frustum1 = new Cesium.OrthographicFrustum();
+// frustum1.near = 1;
+// frustum1.far = 500;
+
+// viewer.trackedEntity = entity;
+// var camera1 = new Cesium.Camera(viewer.scene);
+// camera1.position =  Cesium.Cartesian3.fromDegrees(-123.0744619, 44.0503706, 50);
+// camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
+// camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
+// camera1.frustum= new Cesium.PerspectiveFrustum({
+// fov : Cesium.Math.PI_OVER_THREE  ,
+//   aspectRatio : 1,
+//   near : 1.0,
+//   far : 100.0})
+
+// viewer.scene.primitives.add(new Cesium.DebugCameraPrimitive({
+// camera : camera1,
+// color : Cesium.Color.YELLOW,
+//       updateOnChange:true
+// }));
+// var h=50
+// setInterval(() => {
+//   h=h+10
+// console.log(h)
+// camera1.position= Cesium.Cartesian3.fromDegrees(-123.0744619, 44.0503706, h);
+// }, 5000);

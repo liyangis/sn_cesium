@@ -111,20 +111,20 @@ export default class ViewShed3D {
         // viewer.timeline.zoomTo(start, stop);
         //Compute the entity position property.
         var position = this.computeCirclularFlight(-112.110693, 36.0994841, 0.03,start);
-         // 添加飞机视域
-         var camera1 = new Cesium.Camera(scene);
-         // camera1.position = Cesium.Cartesian3.fromDegrees(-123.075, 44.045000, 5000);
-         camera1.position = position
-         camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
-         camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
-         camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
-         camera1.frustum.near = 1.0;
-         camera1.frustum.far = 2;
-         viewer.scene.primitives.add(new Cesium.DebugCameraPrimitive({
-             camera: camera1,
-             color: Cesium.Color.YELLOW,
-             updateOnChange: false
-         }));
+        //  // 添加飞机视域
+        //  var camera1 = new Cesium.Camera(scene);
+        //  // camera1.position = Cesium.Cartesian3.fromDegrees(-123.075, 44.045000, 5000);
+        //  camera1.position = position
+        //  camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
+        //  camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
+        //  camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
+        //  camera1.frustum.near = 1.0;
+        //  camera1.frustum.far = 2;
+        //  viewer.scene.primitives.add(new Cesium.DebugCameraPrimitive({
+        //      camera: camera1,
+        //      color: Cesium.Color.YELLOW,
+        //      updateOnChange: false
+        //  }));
         //Actually create the entity
         var entity = viewer.entities.add({
 

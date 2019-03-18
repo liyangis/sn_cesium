@@ -51,7 +51,6 @@ export default class ClipTerrain {
                     if (linePositionList.length > 1) {
                         linePositionList.pop();
                         linePositionList.push(cartesian.clone());
-                        this.labelPosition = cartesian.clone();
                     }
                     if (linePositionList.length === 1) {
                         linePositionList.push(cartesian.clone());

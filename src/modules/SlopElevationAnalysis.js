@@ -93,7 +93,7 @@ export default class SlopElevationAnalysis {
     }
     removeDisListener() {
         this.handler && this.handler.destroy()
-        // this.viewer.scene.globe.clippingPlanes & this.viewer.scene.globe.clippingPlanes.enabled = false;
+        if (this.viewer.scene.globe.clippingPlanes) this.viewer.scene.globe.clippingPlanes.enabled = false;
     }
     _drawPoly() {
         let polyStyle = {
@@ -148,7 +148,8 @@ export default class SlopElevationAnalysis {
             planes: clippingPlanes,
             edgeWidth: 1.0,
             edgeColor: Cesium.Color.WHITE,
-            enabled: true
+            enabled: true,
+
         });
     }
     _getElevationContourMaterial() {

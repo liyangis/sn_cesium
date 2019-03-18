@@ -23,10 +23,13 @@
         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
         <li v-on:click="createViewShed()">可视域(DEM)</li>
         <li v-on:click="submergenceAnalysis()">淹没分析</li>
+        <li v-on:click="clipTerrainGro()">挖地形</li>
+        <li v-on:click="slopElevationAnalysis()">坡度等高线</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
     <SubmergAnalysis v-if="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
+    <SlopElevation v-if="slopEle" v-bind:viewer="viewer"></SlopElevation>
     <div id="credit"></div>
     <PositionMouse v-bind:viewer="viewer"></PositionMouse>
   </div>
@@ -49,6 +52,10 @@ import DrawViewLine from "../modules/DrawView";
 import ViewShed3D from "../modules/viewshed_3dtiles/ViewShed3D";
 
 import SubmergAnalysis from "./SubmergAnalysis.vue";
+import ClipTerrain from "../modules/ClipTerrain";
+import SlopElevation from "./SlopElevation";
+import { factors } from "@turf/turf";
+
 export default {
   name: "CesiumMap",
   mounted: function() {
@@ -66,7 +73,9 @@ export default {
       selectionIndicator: false,
       creditContainer: "credit",
       shouldAnimate: true,
-      // terrainProvider: Cesium.createWorldTerrain()
+      // terrainProvider: Cesium.createWorldTerrain({
+      //   requestVertexNormals: true
+      // })
       terrainProvider: new Cesium.CesiumTerrainProvider({
         url: "http://localhost:8080/o_lab",
         requestVertexNormals: true
@@ -79,7 +88,7 @@ export default {
     // 深度检测
     // viewer.scene.globe.depthTestAgainstTerrain = true;
     // 测试飞机可视域
-    this.base.test()
+    // this.base.test();
   },
   data() {
     return {
@@ -87,13 +96,15 @@ export default {
       selected: false,
       profileShow: false,
       profileData: null,
-      submergAna: false
+      submergAna: false,
+      slopEle: false
     };
   },
   components: {
     PositionMouse,
     ProfileChart,
-    SubmergAnalysis
+    SubmergAnalysis,
+    SlopElevation
   },
   methods: {
     measureTriangle: function() {
@@ -187,6 +198,10 @@ export default {
         this.viewSlightLine.remove();
         this.viewSlightLine = null;
       }
+      if (this.clipTerrainObj) {
+        this.clipTerrainObj.remove();
+        this.clipTerrainObj = null;
+      }
     },
     heatMap: function() {
       const data = [];
@@ -209,11 +224,11 @@ export default {
         };
         data.push(element);
       }
-      console.log(JSON.stringify(data));
+      // console.log(JSON.stringify(data));
       if (!this.heatMapObj) {
         this.heatMapObj = new HeatMap(this.viewer, data, bounds);
       } else {
-        this.viewer.zoomto(this.heatMapObj.heatMap._layer)
+        this.viewer.zoomto(this.heatMapObj.heatMap._layer);
       }
     },
     createProfile: function() {
@@ -270,6 +285,14 @@ export default {
       if (!this.viewShedObj) {
         this.viewShedObj = new ViewShed3D(this.viewer);
       }
+    },
+    clipTerrainGro: function() {
+      if (!this.clipTerrainObj) {
+        this.clipTerrainObj = new ClipTerrain(this.viewer);
+      }
+    },
+    slopElevationAnalysis: function() {
+      this.slopEle = !this.slopEle;
     }
   }
 };

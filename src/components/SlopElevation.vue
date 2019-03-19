@@ -30,7 +30,7 @@ export default {
           value: "all"
         }
       ],
-      map_type: true,
+      map_type: false,
       viewModel: {},
       selectedShading: "elevation",
       enableContour: false

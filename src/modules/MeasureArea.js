@@ -5,12 +5,9 @@ export default class MeasureArea {
         this.viewer = viewer;
         this.isTerrain = isTerrain;
         this.style = style
-
         this.handler = null
         this.tempEntities = [];
         this.lineEntities = []
-        this.linePositionList = [];
-        this.areaPositionList = []
         this.labelPosition = {
             x: 1,
             y: 1,
@@ -25,13 +22,8 @@ export default class MeasureArea {
     _addDisListener() {
         let viewer = this.viewer
         let scene = viewer.scene;
-        let linePositionList = this.linePositionList
         viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-
-        let areaPositionList = this.areaPositionList
         this.handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
-        // 绘制线
-        // this._drawLine(linePositionList);
         this._countArea()
         // 绘制面
         this._drawPoly();
@@ -42,26 +34,18 @@ export default class MeasureArea {
                 this._reDraw()
                 reDraw = false
             }
-            let pickedObject = scene.pick(movement.position);
-            if (!Cesium.defined(pickedObject) || pickedObject.primitive instanceof Cesium.Polyline) {
-                let cartesian = this.isTerrain === true ? scene.pickPosition(movement.position) : viewer.camera.pickEllipsoid(movement.position, scene.globe.ellipsoid);
-                //test
-                let ray = viewer.camera.getPickRay(movement.position);
-                cartesian = viewer.scene.globe.pick(ray, viewer.scene);
-                if (cartesian) {
-                    this.tempPoints.push(cartesian.clone());
-                    linePositionList.push(cartesian.clone());
-                    areaPositionList.push(cartesian.clone())
-                    this._drawPoint(this.tempPoints[this.tempPoints.length - 1]);
-                }
-                // if (cartesian) {
-                //     this.tempPoints.push(this._car3ToLatLon(cartesian));
-                //     linePositionList.push(cartesian);
-                //     // areaPositionList.push(cartesian)
-                //     this._drawPoint(this.tempPoints[this.tempPoints.length - 1]);
-                // }
-                isDraw = true
+
+            let cartesian = this.isTerrain === true ? scene.pickPosition(movement.position) : viewer.camera.pickEllipsoid(movement.position, scene.globe.ellipsoid);
+            //test
+            let ray = viewer.camera.getPickRay(movement.position);
+            cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+            if (cartesian) {
+                this.tempPoints.push(cartesian.clone());
+                this._drawPoint(this.tempPoints[this.tempPoints.length - 1]);
             }
+
+            isDraw = true
+
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
         this.handler.setInputAction((movement) => {
             if (isDraw) {
@@ -70,18 +54,15 @@ export default class MeasureArea {
                 cartesian = viewer.scene.globe.pick(ray, viewer.scene);
                 if (cartesian) {
                     let tempPoints = this.tempPoints
-                    if (linePositionList.length > 1) {
-                        linePositionList.pop();
-                        linePositionList.push(cartesian.clone());
-                        this.labelPosition = cartesian.clone();
-                    }
-                    if (linePositionList.length === 1) {
-                        linePositionList.push(cartesian.clone());
-                    }
-
                     if (tempPoints.length > 2) {
                         tempPoints.pop()
                         tempPoints.push(cartesian.clone());
+                        if (tempPoints.length > 2) {
+                            // 大于3个点的时候，在显示面积
+                            this.labelPosition = cartesian.clone();
+                        } else {
+                            this.labelPosition = null;
+                        }
 
                     }
                     if (tempPoints.length === 2) {
@@ -90,17 +71,6 @@ export default class MeasureArea {
                     if (tempPoints.length < 2) {
                         return;
                     }
-                    // if (tempPoints.length>2) {
-                    //     tempPoints.pop()
-                    //     tempPoints.push(this._car3ToLatLon(cartesian));
-
-                    // }
-                    // if(tempPoints.length===2){
-                    //     tempPoints.push(this._car3ToLatLon(cartesian));
-                    // }
-                    // if (tempPoints.length<2) {
-                    //     return ;
-                    // }
                     var area = this._SphericalPolygonAreaMeters(tempPoints)
                     this.countArea = area > 1000000 ? (area / 1000000).toFixed(1) + 'k㎡' : area.toFixed(1) + '㎡'
                     if (area > 10000000000) this.countArea = (area / 10000000000).toFixed(1) + '万k㎡'
@@ -121,14 +91,13 @@ export default class MeasureArea {
                         return;
                     }
                     let tempPoints = this.tempPoints
-                    tempPoints.push(cartesian.clone());
-                    linePositionList.push(cartesian.clone());
+                    // tempPoints.push(cartesian.clone());
+                    if (tempPoints.length > 2) {
+                        tempPoints.pop();
+                        tempPoints.push(cartesian.clone());
+                    }
                     this._drawPoint(tempPoints[tempPoints.length - 1]);
-                    // this._drawDiv(cartesian)
-                    // this._drawPoly(tempPoints);
-                    // this._drawArea(tempPoints)
-                    // this.countArea = null
-                 
+
                 }
                 isDraw = false
                 reDraw = true
@@ -137,8 +106,7 @@ export default class MeasureArea {
     }
     _reDraw() {
         this.tempPoints = []
-        this.linePositionList.length = 0
-        this.areaPositionList.length = 0
+        this.labelPosition = null
         for (let entity of this.tempEntities) {
             this.viewer.entities.remove(entity)
         }
@@ -221,25 +189,13 @@ export default class MeasureArea {
     }
 
     _drawPoly() {
-        // let points = this.tempPoints
-        // if (points.length<3) {
-        //     return ;
-        // }
         let polyStyle = this.style.polyStyle
-        // let pArray = [];
-        // for (let i = 0; i < points.length; i++) {
-        // 	pArray.push(points[i].lon);
-        // 	pArray.push(points[i].lat);
-        // 	// pArray.push(points[i].height)
-        // }
-        // polyStyle.hierarchy = new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArray(pArray))
         let entity =
             this.viewer.entities.add({
                 polygon: polyStyle
             });
         entity.polygon.hierarchy = new Cesium.CallbackProperty(() => {
-            // return this.areaPositionList;
-            return this.linePositionList;
+            return this.tempPoints;
         }, false)
         // entity.polygon.hierarchy = Cesium.Cartesian3.fromDegreesArrayHeights(pArray)
         this.lineEntities.push(entity);

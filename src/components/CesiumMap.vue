@@ -86,7 +86,7 @@ export default {
     this.base = new Base(viewer);
     this.base.showBeijingPositon();
     // 深度检测
-    // viewer.scene.globe.depthTestAgainstTerrain = true;
+    viewer.scene.globe.depthTestAgainstTerrain = true;
     // 测试飞机可视域
     // this.base.test();
   },

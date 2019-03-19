@@ -15,8 +15,15 @@
     <div class="item">
       <font size="3" color="white">
         视角高：
-        <span id="altitude_show">{{alti_String}}</span>km
+        <span id="altitude_show">{{alti_String}}</span>
       </font>
+      </div>
+       <div class="item">
+      <font size="3" color="white">
+        海拔：
+        <span id="altitude_show">{{height_String}}</span>
+      </font>
+      </div>
     </div>
   </div>
 </template>
@@ -31,7 +38,8 @@ export default {
     return {
       log_String: "",
       lat_String: "",
-      alti_String: ""
+      alti_String: "",
+      height_String: ""
     };
   },
   mounted: function() {},
@@ -65,9 +73,13 @@ export default {
           that.log_String = Cesium.Math.toDegrees(
             cartographic.longitude
           ).toFixed(4);
+          const h=that.viewer.scene.globe.getHeight(cartographic)
           that.alti_String = (
             that.viewer.camera.positionCartographic.height / 1000
-          ).toFixed(2);
+          ).toFixed(2)+'km';
+           that.height_String= 
+            (h?h.toFixed(2):0)
+        +'m';
         }
       }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     }
@@ -76,7 +88,7 @@ export default {
 </script>
 <style scoped>
 #latlng_show {
-  width: 340px;
+ 
   height: 30px;
   position: absolute;
   bottom: 40px;

@@ -14,7 +14,7 @@ export default class SlopElevationAnalysis {
             enableContour: false,
             contourSpacing: 150.0,
             contourWidth: 2.0,
-            selectedShading: 'slope',
+            selectedShading: 'elevation',
             changeColor: function () {
                 this.contourUniforms.color = Cesium.Color.fromRandom({ alpha: 1.0 }, contourColor);
             }

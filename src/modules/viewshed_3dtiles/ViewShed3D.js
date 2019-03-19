@@ -8,7 +8,7 @@ export default class ViewShed3D {
             canvas.focus();
         });
         canvas.focus();
-        this.viewer.shouldAnimate=true
+        this.viewer.shouldAnimate = true
         const scene = viewer.scene
 
         this.scene = scene
@@ -94,7 +94,7 @@ export default class ViewShed3D {
     }
     addAnimate() {
         const viewer = this.viewer
-        const scene=viewer.scene
+        const scene = viewer.scene
         //Set the random number seed for consistent results.
         Cesium.Math.setRandomNumberSeed(3);
         //Set bounds of our simulation time
@@ -110,21 +110,32 @@ export default class ViewShed3D {
         //Set timeline to simulation bounds
         // viewer.timeline.zoomTo(start, stop);
         //Compute the entity position property.
-        var position = this.computeCirclularFlight(-112.110693, 36.0994841, 0.03,start);
-        //  // 添加飞机视域
-        //  var camera1 = new Cesium.Camera(scene);
-        //  // camera1.position = Cesium.Cartesian3.fromDegrees(-123.075, 44.045000, 5000);
-        //  camera1.position = position
-        //  camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
-        //  camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
-        //  camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
-        //  camera1.frustum.near = 1.0;
-        //  camera1.frustum.far = 2;
-        //  viewer.scene.primitives.add(new Cesium.DebugCameraPrimitive({
-        //      camera: camera1,
-        //      color: Cesium.Color.YELLOW,
-        //      updateOnChange: false
-        //  }));
+        let flightPositions = this.computeCirclularFlight(-112.110693, 36.0994841, 0.03, start);
+        this.flightPositions=flightPositions
+        const that =this
+        // 添加飞机视域
+        var camera1 = new Cesium.Camera(scene);
+        var clock = viewer.clock;
+        // camera1.position = Cesium.Cartesian3.fromDegrees(-123.075, 44.045000, 5000);
+        camera1.position = flightPositions.getValue(clock.currentTime);
+        camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
+        camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
+        camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
+        camera1.frustum.near = 1.0;
+        camera1.frustum.far = 2;
+        viewer.scene.primitives.add(new Cesium.DebugCameraPrimitive({
+            camera: camera1,
+            color: Cesium.Color.YELLOW,
+            updateOnChange: true
+        }));
+        scene.postRender.addEventListener(function () {
+            if (flightPositions) {
+                
+                var position = flightPositions.getValue(clock.currentTime);
+                camera1.position = position;
+            }
+
+        });
         //Actually create the entity
         var entity = viewer.entities.add({
 
@@ -135,10 +146,10 @@ export default class ViewShed3D {
             })]),
 
             //Use our computed positions
-            position: position,
+            position: flightPositions,
 
             //Automatically compute orientation based on position movement.
-            orientation: new Cesium.VelocityOrientationProperty(position),
+            orientation: new Cesium.VelocityOrientationProperty(flightPositions),
 
             //Load the Cesium plane model to represent the entity
             model: {
@@ -157,13 +168,13 @@ export default class ViewShed3D {
             }
         });
         entity.position.setInterpolationOptions({
-            interpolationDegree : 1,
-            interpolationAlgorithm : Cesium.LinearApproximation
+            interpolationDegree: 1,
+            interpolationAlgorithm: Cesium.LinearApproximation
         });
         viewer.zoomTo(viewer.entities, new Cesium.HeadingPitchRange(Cesium.Math.toRadians(-90), Cesium.Math.toRadians(-15), 7500));
     }
     //Generate a random circular pattern with varying heights.
-    computeCirclularFlight(lon, lat, radius,start) {
+    computeCirclularFlight(lon, lat, radius, start) {
         var property = new Cesium.SampledPositionProperty();
         for (var i = 0; i <= 360; i += 45) {
             var radians = Cesium.Math.toRadians(i);

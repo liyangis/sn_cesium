@@ -9,8 +9,14 @@ this._cascadesEnabled =false;// this._isPointLight ? false : defaultValue(option
 282，283行，原来是false，改成true，可以观察视锥体范围
   this.debugShow = true;
   this.debugFreezeFrame = true;
+3.修改视锥体的样式
+路径：D:\ly\ab_cesium\SpatialNalysis\sn_cesium\node_modules\cesium\Source\Scene\DebugCameraPrimitive.js
+ 第183行：原来是0.2，更改为0.0，去掉填充
+color : ColorGeometryInstanceAttribute.fromColor(Color.fromAlpha(this._color, 0.0, scratchColor))
 //////////////////////////
 如果是dem的视域范围，就是一个圆周，设置 是点光源即可
+ this._isPointLight =true;//defaultValue(options.isPointLight, false);
+ this._pointLightRadius = defaultValue(options.pointLightRadius, 600.0);
 如果 是 透视图，则需要
 设置
 this.debugShow = true;

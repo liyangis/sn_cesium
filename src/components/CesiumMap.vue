@@ -14,17 +14,19 @@
         <li v-on:click="add3DTiles()">3DTiles</li>
         <li v-on:click="createViewLine()">通视(DEM)</li>
         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
-        <li v-on:click="createViewShed()">可视域(DEM)</li>
-        <li v-on:click="viewshed3DAnalysis()">可视域(综合)</li>
+        <li v-show="false" v-on:click="createViewShed()">可视域(DEM)</li>
+        <li v-show="false" v-on:click="viewshed3DAnalysis()">可视域(综合)</li>
         <li v-on:click="submergenceAnalysis()">淹没分析</li>
         <li v-on:click="clipTerrainGro()">挖地形</li>
         <li v-on:click="slopElevationAnalysis()">坡度等高线</li>
+        <li v-on:click="queryBufferAnalysis()">缓冲区</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
     <SubmergAnalysis v-if="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
     <SlopElevation v-if="slopEle" v-bind:viewer="viewer"></SlopElevation>
     <ViewShed3D v-if="viewshed3D" v-bind:viewer="viewer"></ViewShed3D>
+    <QueryBuffer v-if="queryBuf" v-bind:viewer="viewer"></QueryBuffer>
     <div id="credit"></div>
     <PositionMouse v-bind:viewer="viewer"></PositionMouse>
   </div>
@@ -52,6 +54,8 @@ import SubmergAnalysis from "./SubmergAnalysis.vue";
 import ClipTerrain from "../modules/ClipTerrain";
 import SlopElevation from "./SlopElevation";
 import { factors } from "@turf/turf";
+import QueryBuffer from "./QueryBuffer.vue";
+
 
 export default {
   name: "CesiumMap",
@@ -84,10 +88,7 @@ export default {
     this.base.showBeijingPositon();
     // 深度检测
     viewer.scene.globe.depthTestAgainstTerrain = true;
-    // 测试飞机可视域
-    // this.base.test2();
 
-    // this.base.test_addSimple3Dtiles();
   },
   data() {
     return {
@@ -97,7 +98,8 @@ export default {
       profileData: null,
       submergAna: false,
       slopEle: false,
-      viewshed3D: true
+      viewshed3D: false,
+      queryBuf:false
     };
   },
   components: {
@@ -105,7 +107,8 @@ export default {
     ProfileChart,
     SubmergAnalysis,
     SlopElevation,
-    ViewShed3D
+    ViewShed3D,
+    QueryBuffer
   },
   methods: {
     measureTriangle: function() {
@@ -266,6 +269,11 @@ export default {
         this.tilesetObj = tileset;
       }
       this.base.show3DtilesPosition();
+      // if (!this.tilesetObj) {
+        var tileset = this.base.addBJBuilding3Dtiles();
+        this.viewer.scene.primitives.add(tileset);
+        // this.tilesetObj = tileset;
+      // }
     },
     createViewLine: function(type = 0) {
       this.remove();
@@ -322,6 +330,9 @@ export default {
     },
     viewshed3DAnalysis: function() {
       this.viewshed3D = !this.viewshed3D;
+    },
+    queryBufferAnalysis:function(){
+      this.queryBuf=!this.queryBuf
     }
   }
 };

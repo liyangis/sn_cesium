@@ -4,6 +4,7 @@
     <button class="btn-dem-spot">地形-聚光灯</button>
     <button class="btn-3dtiles">模型-点光源</button>
     <button class="btn-3dtiles-spot">模型-聚光灯</button>
+    <button class="btn-3dtiles-spot" v-on:click="clear()">清除</button>
     <input type="number" name="height" id="height" v-model="height">高度
   </div>
 </template>
@@ -33,6 +34,13 @@ export default {
     }
   },
   methods: {
+    clear: function() {
+      const viewer = this.viewer;
+      if (this.circle) {
+        viewer.scene.primitives.remove(this.circle);
+        this.circle = null;
+      }
+    },
     demShow: function() {
       const that = this;
       const viewer = this.viewer;
@@ -81,14 +89,14 @@ export default {
         Cesium.Cartesian3.UNIT_Z,
         new Cesium.Cartesian3()
       );
-      //   let pri = viewer.scene.primitives.add(
-      //     new Cesium.DebugCameraPrimitive({
-      //       camera: camera1,
-      //       color: Cesium.Color.YELLOW,
-      //       updateOnChange: true
-      //       // shadows: Cesium.ShadowMode.ENABLED
-      //     })
-      //   );
+      let pri = viewer.scene.primitives.add(
+        new Cesium.DebugCameraPrimitive({
+          camera: camera1,
+          color: Cesium.Color.YELLOW,
+          updateOnChange: true
+          // shadows: Cesium.ShadowMode.ENABLED
+        })
+      );
       this.camera = camera1;
       viewer.shadowMap._lightCamera = camera1;
       var defaults = {
@@ -105,7 +113,7 @@ export default {
           semiMajorAxis: 600.0
         })
       });
-      this.circle=viewer.scene.primitives.add(
+      this.circle = viewer.scene.primitives.add(
         new Cesium.Primitive({
           geometryInstances: instance,
           appearance: new Cesium.EllipsoidSurfaceAppearance({

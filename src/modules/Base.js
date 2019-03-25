@@ -29,11 +29,28 @@ export default class Base {
       url: Cesium.buildModuleUrl("Cesium/Assets/Textures/NaturalEarthII")
     })
   }
-  static addLocalTerrainLayer(){
-    return  new Cesium.CesiumTerrainProvider({
+  static addLocalTerrainLayer() {
+    return new Cesium.CesiumTerrainProvider({
       url: "http://localhost:8080/o_lab",
       requestVertexNormals: true
     })
+  }
+  addBJBuilding3Dtiles() {
+    const viewer = this.viewer
+    const tileset = new Cesium.Cesium3DTileset({
+      url: 'http://localhost:8080/bjbuilding3dtiles_dem/tileset.json'
+    });
+    tileset.debugShowBoundingVolume = true;
+    tileset.readyPromise.then(function (tileset) {
+      viewer.scene.primitives.add(tileset);
+      viewer.zoomTo(tileset, new Cesium.HeadingPitchRange(0.0, -0.5, tileset.boundingSphere.radius * 2.0));
+    }).otherwise(function (error) {
+
+    });
+    tileset.tileLoad.addEventListener(function (tile) {
+      console.log('A tile was loaded.');
+    });
+    return tileset
   }
   showLocation() {
     //设置相机位置、视角

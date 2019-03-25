@@ -294,9 +294,6 @@ export default class DrawViewShed3D {
         if (type) {
             // 方式三，模型坐标
             const pickedObject = scene.pick(position);
-            // if (pickedObject instanceof Cesium.Cesium3DTileFeature) {
-            //     pickedObject.color = Cesium.Color.YELLOW;
-            // }
             if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
                 const cart = viewer.scene.pickPosition(position);
                 if (Cesium.defined(cart)) {
@@ -316,8 +313,6 @@ export default class DrawViewShed3D {
             if (Cesium.defined(cart)) {
                 cartesian = cart
             }
-
-
         }
         return cartesian
     }

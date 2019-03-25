@@ -1,5 +1,5 @@
 import Cesium from 'cesium/Source/Cesium'
-export default class ViewShed3D {
+export default class ViewShed3DAnalysis {
     constructor(viewer, position = null) {
         this.viewer = viewer
         var canvas = viewer.canvas;
@@ -111,15 +111,21 @@ export default class ViewShed3D {
         // viewer.timeline.zoomTo(start, stop);
         //Compute the entity position property.
         let flightPositions = this.computeCirclularFlight(-112.110693, 36.0994841, 0.03, start);
-        this.flightPositions=flightPositions
-        const that =this
+        this.flightPositions = flightPositions
+        const that = this
         // 添加飞机视域
-        var camera1 = new Cesium.Camera(scene);
+        const flightOrientation = new Cesium.VelocityOrientationProperty(flightPositions)
+
         var clock = viewer.clock;
-        // camera1.position = Cesium.Cartesian3.fromDegrees(-123.075, 44.045000, 5000);
-        camera1.position = flightPositions.getValue(clock.currentTime);
-        camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
-        camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
+        const orientation = flightOrientation.getValue(clock.currentTime)
+        var camera1 = new Cesium.Camera(scene);
+        var position = flightPositions.getValue(clock.currentTime);
+        // camera1.flyTo({
+        //     destination: position, orientation: orientation
+        // })
+        camera1.position = position;//flightPositions.getValue(clock.currentTime);
+        // camera1.direction = Cesium.Cartesian3.negate(Cesium.Cartesian3.UNIT_Z, new Cesium.Cartesian3());
+        // camera1.up = Cesium.Cartesian3.clone(Cesium.Cartesian3.UNIT_Y);
         camera1.frustum.fov = Cesium.Math.PI_OVER_THREE;
         camera1.frustum.near = 1.0;
         camera1.frustum.far = 2;
@@ -128,11 +134,21 @@ export default class ViewShed3D {
             color: Cesium.Color.YELLOW,
             updateOnChange: true
         }));
+
         scene.postRender.addEventListener(function () {
             if (flightPositions) {
-                
-                var position = flightPositions.getValue(clock.currentTime);
-                camera1.position = position;
+                try {
+                    const position = flightPositions.getValue(clock.currentTime);
+                    camera1.position = position;
+                    const orientation = flightOrientation.getValue(clock.currentTime)
+                    const rotation = Cesium.Quaternion.computeAngle(orientation)
+                    // camera1.flyTo({
+                    //     destination: position, orientation: orientation
+                    // })
+
+                } catch (e) { }
+
+
             }
 
         });

@@ -1,4 +1,5 @@
 import Cesium from 'cesium/Source/Cesium'
+// 坡度和等高线分析
 export default class SlopElevationAnalysis {
     constructor(viewer) {
         this.viewer = viewer
@@ -9,6 +10,8 @@ export default class SlopElevationAnalysis {
         this.contourColor = Cesium.Color.RED.clone();
         this.contourUniforms = {};
         this.shadingUniforms = {};
+        this._showLocation()
+
         // The viewModel tracks the state of our mini application.
         this.viewModel = {
             enableContour: false,
@@ -21,18 +24,24 @@ export default class SlopElevationAnalysis {
         };
         this.updateMaterial(this.viewModel)
         this.linePositionList = []
-        this.areaPositionList = []
-        this.tempPositionList = []
         this.lineEntities = []
 
+
+    }
+    _initViewOptions() {
+        const viewer = this.viewer
+        const skyAtm = viewer.skyAtmosphere
+        this.viewerOptions = {
+            skyAtmosphere: skyAtm
+        }
+        viewer.skyAtmosphere = false
     }
     addDisListener() {
         let viewer = this.viewer
+        this._initViewOptions()
         let scene = viewer.scene;
         let linePositionList = this.linePositionList
         viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-
-        let areaPositionList = this.areaPositionList
         this.handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
         // 绘制面
         this._drawPoly();
@@ -49,7 +58,7 @@ export default class SlopElevationAnalysis {
             cartesian = viewer.scene.globe.pick(ray, viewer.scene);
             if (cartesian) {
                 linePositionList.push(cartesian.clone());
-                areaPositionList.push(cartesian.clone())
+
             }
             isDraw = true
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -83,8 +92,12 @@ export default class SlopElevationAnalysis {
                         this._reDraw()
                         return;
                     }
-                    linePositionList.push(cartesian.clone());
-                    this._loadStHelens(viewer.scene.globe)
+                    if (tempLength > 2) {
+                        this.linePositionList.pop();
+                        this.linePositionList.push(cartesian.clone());
+                    }
+                    this._clip(viewer.scene.globe)
+                    this.linePositionList.length = 0
                 }
                 isDraw = false
                 reDraw = true
@@ -92,8 +105,36 @@ export default class SlopElevationAnalysis {
         }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
     }
     removeDisListener() {
-        this.handler && this.handler.destroy()
+        const viewer = this.viewer
+        if (this.handler) {
+            this.handler.destroy()
+            this.handler = null
+        }
         if (this.viewer.scene.globe.clippingPlanes) this.viewer.scene.globe.clippingPlanes.enabled = false;
+        this.linePositionList.length = 0
+        for (let lineEntity of this.lineEntities) {
+            viewer.entities.remove(lineEntity)
+        }
+        this.lineEntities.length = 0
+        // 回复原始viewer状态
+        if (this.viewerOptions)
+            viewer.skyAtmosphere = this.viewerOptions.skyAtmosphere
+
+    }
+    _showLocation() {
+        //设置相机位置、视角
+        this.viewer.scene.camera.setView({
+            destination: new Cesium.Cartesian3(
+                -2150844.0729017877,
+                4422980.466115983,
+                4073751.2901644544
+            ),
+            orientation: {
+                heading: 0.05204345940394628,
+                pitch: -0.7162450366469195,
+                roll: 0.00022858775907597106
+            }
+        });
     }
     _drawPoly() {
         let polyStyle = {
@@ -108,7 +149,7 @@ export default class SlopElevationAnalysis {
                 polygon: polyStyle
             });
         entity.polygon.hierarchy = new Cesium.CallbackProperty(() => {
-            // return this.areaPositionList;
+
             return this.linePositionList;
         }, false)
         // entity.polygon.hierarchy = Cesium.Cartesian3.fromDegreesArrayHeights(pArray)
@@ -117,9 +158,9 @@ export default class SlopElevationAnalysis {
     }
     _reDraw() {
         this.linePositionList.length = 0
-        this.areaPositionList.length = 0
     }
-    _loadStHelens(globe) {
+    // 尝试由挖洞转为多边形裁剪
+    _clip(globe) {
         // Create clipping planes for polygon around area to be clipped.
         const points = this.linePositionList
         var pointsLength = points.length;
@@ -135,7 +176,7 @@ export default class SlopElevationAnalysis {
             var right = Cesium.Cartesian3.subtract(points[nextIndex], midpoint, new Cesium.Cartesian3());
             right = Cesium.Cartesian3.normalize(right, right);
 
-            var normal = Cesium.Cartesian3.cross(right, up, new Cesium.Cartesian3());
+            var normal = Cesium.Cartesian3.cross(up, right, new Cesium.Cartesian3());
             normal = Cesium.Cartesian3.normalize(normal, normal);
 
             // Compute distance by pretending the plane is at the origin
@@ -149,7 +190,7 @@ export default class SlopElevationAnalysis {
             edgeWidth: 1.0,
             edgeColor: Cesium.Color.WHITE,
             enabled: true,
-
+            unionClippingRegions: true
         });
     }
     _getElevationContourMaterial() {
@@ -260,5 +301,15 @@ export default class SlopElevationAnalysis {
         }
 
         globe.material = material;
+    }
+    remove() {
+        var viewer = this.viewer
+        this.linePositionList.length = 0
+        for (let lineEntity of this.lineEntities) {
+            viewer.entities.remove(lineEntity)
+        }
+        this.lineEntities.length = 0
+        this.handler.destroy()
+
     }
 }

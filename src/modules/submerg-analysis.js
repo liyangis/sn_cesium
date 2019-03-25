@@ -38,6 +38,7 @@ export default class SubmergenceAnalysis {
                 roll: Cesium.Math.toRadians(0)//默认0
             }
         });
+        viewer.skyAtmosphere = false
     }
     // 根据矩形范围得到行列数点坐标和高程信息
     _getPoints(xmin, xmax, ymin, ymax) {
@@ -244,6 +245,7 @@ export default class SubmergenceAnalysis {
         for (let entity of this.polygonEntities) {
             viewer.entities.remove(entity)
         }
+        viewer.skyAtmosphere = true
     }
     changeMapType(type) {
         if (!type) {

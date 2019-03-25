@@ -2,14 +2,7 @@
   <div class="container">
     <div id="cesiumContainer"></div>
     <canvas id="myCanvas"></canvas>
-    <!-- <div id="menu">
-            <p>
-              <button v-on:click="DrawLineKSY()">可视域</button>
-            </p>
-            <p>
-              <button v-on:click="ClearAll()">清除</button>
-            </p>
-    </div>-->
+
     <div class="measure">
       <ul>
         <li v-on:click="measureTriangle()">高度</li>
@@ -22,6 +15,7 @@
         <li v-on:click="createViewLine()">通视(DEM)</li>
         <li v-on:click="createViewLine(1)">通视(3DTiles)</li>
         <li v-on:click="createViewShed()">可视域(DEM)</li>
+        <li v-on:click="viewshed3DAnalysis()">可视域(综合)</li>
         <li v-on:click="submergenceAnalysis()">淹没分析</li>
         <li v-on:click="clipTerrainGro()">挖地形</li>
         <li v-on:click="slopElevationAnalysis()">坡度等高线</li>
@@ -30,6 +24,7 @@
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
     <SubmergAnalysis v-if="submergAna" v-bind:viewer="viewer"></SubmergAnalysis>
     <SlopElevation v-if="slopEle" v-bind:viewer="viewer"></SlopElevation>
+    <ViewShed3D v-if="viewshed3D" v-bind:viewer="viewer"></ViewShed3D>
     <div id="credit"></div>
     <PositionMouse v-bind:viewer="viewer"></PositionMouse>
   </div>
@@ -49,7 +44,9 @@ import PositionMouse from "./PositionMouse.vue";
 import ProfileChart from "./ProfileChart.vue";
 import DrawProfile from "../modules/DrawProfile";
 import DrawViewLine from "../modules/DrawView";
-import ViewShed3D from "../modules/viewshed_3dtiles/ViewShed3D";
+import ViewShed3DAnalysis from "../modules/viewshed_3dtiles/ViewShed3DAnalysis";
+import ViewShed3D from "./ViewShed3D";
+import DrawViewShed3D from "../modules/viewshed_3dtiles/DrawViewShed3D";
 
 import SubmergAnalysis from "./SubmergAnalysis.vue";
 import ClipTerrain from "../modules/ClipTerrain";
@@ -73,13 +70,13 @@ export default {
       selectionIndicator: false,
       creditContainer: "credit",
       shouldAnimate: true,
+      //shadows: true,
       // terrainProvider: Cesium.createWorldTerrain({
       //   requestVertexNormals: true
       // })
-      terrainProvider: new Cesium.CesiumTerrainProvider({
-        url: "http://localhost:8080/o_lab",
-        requestVertexNormals: true
-      })
+      terrainProvider: Base.addLocalTerrainLayer(),
+      // imageryProvider: Base.addLocalImageLayer(),
+      imageryProvider: Base.addBaseImageLayer()
     };
     this.viewer = new Viewer("cesiumContainer", opts);
     var viewer = this.viewer;
@@ -88,7 +85,9 @@ export default {
     // 深度检测
     viewer.scene.globe.depthTestAgainstTerrain = true;
     // 测试飞机可视域
-    // this.base.test();
+    // this.base.test2();
+
+    // this.base.test_addSimple3Dtiles();
   },
   data() {
     return {
@@ -97,14 +96,16 @@ export default {
       profileShow: false,
       profileData: null,
       submergAna: false,
-      slopEle: false
+      slopEle: false,
+      viewshed3D: true
     };
   },
   components: {
     PositionMouse,
     ProfileChart,
     SubmergAnalysis,
-    SlopElevation
+    SlopElevation,
+    ViewShed3D
   },
   methods: {
     measureTriangle: function() {
@@ -202,6 +203,13 @@ export default {
         this.clipTerrainObj.remove();
         this.clipTerrainObj = null;
       }
+      if (this.viewShedObj) {
+        this.viewShedObj.remove();
+        this.viewShedObj = null;
+      }
+      if (this.heatMapObj) {
+        this.heatMapObj.show(false);
+      }
     },
     heatMap: function() {
       const data = [];
@@ -283,7 +291,25 @@ export default {
     },
     createViewShed: function() {
       if (!this.viewShedObj) {
-        this.viewShedObj = new ViewShed3D(this.viewer);
+        // this.viewShedObj = new ViewShed3D(this.viewer);
+        this.viewShedObj = new DrawViewShed3D(
+          this.viewer,
+          false,
+          {
+            labelStyle: {
+              font: "15px sans-serif",
+              pixelOffset: new Cesium.Cartesian2(0.0, -30),
+              fillColor: new Cesium.Color(1, 1, 1, 1),
+              showBackground: true,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            lineStyle: {
+              width: 2,
+              material: Cesium.Color.CHARTREUSE
+            }
+          },
+          () => {}
+        );
       }
     },
     clipTerrainGro: function() {
@@ -293,6 +319,9 @@ export default {
     },
     slopElevationAnalysis: function() {
       this.slopEle = !this.slopEle;
+    },
+    viewshed3DAnalysis: function() {
+      this.viewshed3D = !this.viewshed3D;
     }
   }
 };

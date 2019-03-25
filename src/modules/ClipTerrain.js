@@ -1,7 +1,7 @@
 
 import Cesium from 'cesium/Source/Cesium'
 export default class ClipTerrain {
-    constructor(viewer, height = 400) {
+    constructor(viewer, height = 200) {
         this.viewer = viewer
         this.clipHeight = height
         this.isTerrain = true
@@ -178,11 +178,13 @@ export default class ClipTerrain {
             return latLon
         })
         const positions = Cesium.Cartesian3.fromDegreesArrayHeights(ps)
-        // let maxHeights = new Array(list.length + 1)
-        // for (let i = 0; i < list.length; i++) {
-        //     minHeights[i] = minH;
+        let maxHeights = new Array(list.length + 1)
+        for (let i = 0; i < list.length; i++) {
+            const cartographic = Cesium.Cartographic.fromCartesian(list[i]);
+            const h = this.viewer.scene.globe.getHeight(cartographic)
+            maxHeights[i] = h;
 
-        // }
+        }
         var stripeMaterial = new Cesium.StripeMaterialProperty({
             evenColor: Cesium.Color.WHITE.withAlpha(0.5),
             oddColor: Cesium.Color.BLUE.withAlpha(0.5),
@@ -194,27 +196,50 @@ export default class ClipTerrain {
             // color: Cesium.Color.BLUE,
             // repeat: new Cesium.Cartesian2(4, 4)
         });
+        var terrainProvider = new Cesium.CesiumTerrainProvider({
+            url: "http://localhost:8080/o_lab"
+        })
 
+        // 根据地形计算某经纬度点的高度
+        let heightArr = []
+        const pts = list.map(d => Cesium.Cartographic.fromCartesian(d))
+        var promise = Cesium.sampleTerrainMostDetailed(terrainProvider, pts);
+        const viewer = this.viewer
+        const that = this
+        Cesium.when(promise, function (updatedPositions) {
+            let wallStyle1 = {
+                positions: positions,
+                material: imgMaterial
+            }
+            heightArr = updatedPositions.map(d => d.height)
+            let entity1 =
+                viewer.entities.add({
+                    maximumHeights: heightArr,
+                   minimumHeights: 0,
+                    wall: wallStyle1
+                });
+
+            that.tempEntities.push(entity1);
+        });
 
         let wallStyle = {
             positions: positions,
             material: imgMaterial
         }
-        let entity =
-            this.viewer.entities.add({
+        // let entity =
+        //     this.viewer.entities.add({
+        //         maximumHeights: maxHeights,
+        //         minimumHeights:minH,
+        //         wall: wallStyle
+        //     });
 
-                // maximumHeights: minHeights,
-                // minimumHeights:minHeights,
-                wall: wallStyle
-            });
-
-        this.tempEntities.push(entity);
+        //this.tempEntities.push(entity);
 
     }
     _drawPolygon(list) {
 
         const cartographic = Cesium.Cartographic.fromCartesian(list[0]);
-        const clampPoint=this.viewer.scene.clampToHeight(list[0])
+        // const clampPoint=this.viewer.scene.clampToHeight(cartographic)
         const h = this.viewer.scene.globe.getHeight(cartographic)
         const imgMaterialBottom = new Cesium.ImageMaterialProperty({
             //  image:'http://localhost:8081/models/excavationregion_side.jpg',
@@ -223,12 +248,12 @@ export default class ClipTerrain {
             // repeat: new Cesium.Cartesian2(4, 4)
         });
         let polyStyle = {
-            height: h - this.clipHeight,
-            //heightReference:Cesium.HeightReference.CLAMP_TO_GROUND,
+            height: - this.clipHeight,
+            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
             material: imgMaterialBottom,
             outline: true,
             outlineColor: Cesium.Color.WHITE,
-            
+
         }
         let entity =
             this.viewer.entities.add({
@@ -243,11 +268,11 @@ export default class ClipTerrain {
             // repeat: new Cesium.Cartesian2(4, 4)
         });
         let polyStyleSide = {
-            height: h - this.clipHeight,
-            //heightReference:Cesium.HeightReference.RELATIVE_TO_GROUND,
-            extrudedHeight: this.clipHeight,
+            height: - this.clipHeight,
+            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+            extrudedHeight: 0.0,
             // RELATIVE_TO_GROUND /CLAMP_TO_GROUND
-            //extrudedHeightReference:Cesium.HeightReference.RELATIVE_TO_GROUND,
+            extrudedHeightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
             material: imgMaterialSide,
             outline: true,
             outlineColor: Cesium.Color.WHITE,

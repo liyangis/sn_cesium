@@ -4,9 +4,11 @@
     <select v-model="selected">
       <option v-for="option in options" :value="option.text" :key="option.value">{{option.text}}</option>
     </select>
-    <input type="radio" name="type_map" v-on:click="changeType" v-bind:checked="map_type">
+    <input type="radio" name="type_map" v-on:click="changeType(0)" v-bind:checked="map_type==0">
+    <label>原始图</label>
+    <input type="radio" name="type_map" v-on:click="changeType(1)" v-bind:checked="map_type==1">
     <label>坡度图</label>
-    <input type="radio" name="type_map" v-on:click="changeType" v-bind:checked="!map_type">
+    <input type="radio" name="type_map" v-on:click="changeType(2)" v-bind:checked="map_type==2">
     <label>高程图</label>
     <input type="checkbox" name="contour" v-on:click="enabledContour">
     <label>等高线</label>
@@ -30,7 +32,7 @@ export default {
           value: "all"
         }
       ],
-      map_type: false,
+      map_type: 2,
       viewModel: {},
       selectedShading: "elevation",
       enableContour: false
@@ -40,11 +42,10 @@ export default {
     if (!this.slopEleObj) {
       this.slopEleObj = new SlopElevationAnalysis(this.viewer);
     }
-    // this.slopEleObj.updateMaterial();
   },
   methods: {
     changeType: function(e) {
-      this.map_type = !this.map_type;
+      this.map_type = e;
     },
     enabledContour: function() {
       this.enableContour = !this.enableContour;
@@ -55,12 +56,27 @@ export default {
       this.slopEleObj.viewModel.selectedShading = "none";
       this.slopEleObj.viewModel.enableContour = false;
       this.slopEleObj.updateMaterial(this.slopEleObj.viewModel);
+      this.slopEleObj.removeDisListener();
       this.slopEleObj = null;
     }
   },
   watch: {
     map_type: function(value) {
-      this.slopEleObj.viewModel.selectedShading = value ? "slope" : "elevation";
+      let type="none"
+      switch (value) {
+        case 0:
+          type="none"
+          break;
+       case 1:
+          type="slope"
+          break;
+           case 2:
+          type="elevation"
+          break;
+        default:
+          break;
+      }
+      this.slopEleObj.viewModel.selectedShading = type;
       this.slopEleObj.updateMaterial(this.slopEleObj.viewModel);
     },
     enableContour: function(value) {
@@ -72,7 +88,8 @@ export default {
         if (value == "多边形绘制") {
           this.slopEleObj.addDisListener();
         } else {
-             this.slopEleObj.removeDisListener()
+          this.slopEleObj.removeDisListener();
+         
         }
       }
     }

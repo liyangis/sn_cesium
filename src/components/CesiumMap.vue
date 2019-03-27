@@ -20,6 +20,7 @@
         <li v-on:click="clipTerrainGro()">挖地形</li>
         <li v-on:click="slopElevationAnalysis()">坡度等高线</li>
         <li v-on:click="queryBufferAnalysis()">缓冲区</li>
+        <li v-on:click="networkAnalysis()">网络分析</li>
       </ul>
     </div>
     <ProfileChart v-show="profileShow" v-bind:dataSet="profileData"></ProfileChart>
@@ -27,6 +28,7 @@
     <SlopElevation v-if="slopEle" v-bind:viewer="viewer"></SlopElevation>
     <ViewShed3D v-if="viewshed3D" v-bind:viewer="viewer"></ViewShed3D>
     <QueryBuffer v-if="queryBuf" v-bind:viewer="viewer"></QueryBuffer>
+    <MakeRouting v-if="networkAna" v-bind:viewer="viewer"></MakeRouting>
     <div id="credit"></div>
     <PositionMouse v-bind:viewer="viewer"></PositionMouse>
   </div>
@@ -55,7 +57,7 @@ import ClipTerrain from "../modules/ClipTerrain";
 import SlopElevation from "./SlopElevation";
 import { factors } from "@turf/turf";
 import QueryBuffer from "./QueryBuffer.vue";
-
+import MakeRouting from "./MakeRouting.vue";
 
 export default {
   name: "CesiumMap",
@@ -88,7 +90,6 @@ export default {
     this.base.showBeijingPositon();
     // 深度检测
     viewer.scene.globe.depthTestAgainstTerrain = true;
-
   },
   data() {
     return {
@@ -99,7 +100,8 @@ export default {
       submergAna: false,
       slopEle: false,
       viewshed3D: false,
-      queryBuf:false
+      queryBuf: false,
+      networkAna: false
     };
   },
   components: {
@@ -108,7 +110,8 @@ export default {
     SubmergAnalysis,
     SlopElevation,
     ViewShed3D,
-    QueryBuffer
+    QueryBuffer,
+    MakeRouting
   },
   methods: {
     measureTriangle: function() {
@@ -270,9 +273,9 @@ export default {
       }
       this.base.show3DtilesPosition();
       // if (!this.tilesetObj) {
-        var tileset = this.base.addBJBuilding3Dtiles();
-        this.viewer.scene.primitives.add(tileset);
-        // this.tilesetObj = tileset;
+      var tileset = this.base.addBJBuilding3Dtiles();
+      this.viewer.scene.primitives.add(tileset);
+      // this.tilesetObj = tileset;
       // }
     },
     createViewLine: function(type = 0) {
@@ -331,8 +334,11 @@ export default {
     viewshed3DAnalysis: function() {
       this.viewshed3D = !this.viewshed3D;
     },
-    queryBufferAnalysis:function(){
-      this.queryBuf=!this.queryBuf
+    queryBufferAnalysis: function() {
+      this.queryBuf = !this.queryBuf;
+    },
+    networkAnalysis: function() {
+      this.networkAna = !this.networkAna;
     }
   }
 };

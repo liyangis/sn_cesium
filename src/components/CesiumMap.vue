@@ -20,6 +20,7 @@
         <li v-on:click="clipTerrainGro()">挖地形</li>
         <li v-on:click="slopElevationAnalysis()">坡度等高线</li>
         <li v-on:click="queryBufferAnalysis()">缓冲区</li>
+        <li v-on:click="queryAnalysis()">叠置</li>
         <li v-on:click="networkAnalysis()">网络分析</li>
       </ul>
     </div>
@@ -58,6 +59,7 @@ import SlopElevation from "./SlopElevation";
 import { factors } from "@turf/turf";
 import QueryBuffer from "./QueryBuffer.vue";
 import MakeRouting from "./MakeRouting.vue";
+import QueryByPolygon from "../modules/query/queryByPolygon";
 
 export default {
   name: "CesiumMap",
@@ -336,6 +338,29 @@ export default {
     },
     queryBufferAnalysis: function() {
       this.queryBuf = !this.queryBuf;
+    },
+    queryAnalysis: function() {
+      this.queryPolygon = new QueryByPolygon(this.viewer, false, {
+        labelStyle: {
+          pixelOffset: new Cesium.Cartesian2(0.0, -30),
+          fillColor: new Cesium.Color(1, 1, 1, 1),
+          showBackground: true,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        lineStyle: {
+          width: 1,
+          material: Cesium.Color.CHARTREUSE
+        },
+        polyStyle: {
+          hierarchy: {},
+          outline: true,
+          outlineColor: Cesium.Color.MAGENTA,
+          outlineWidth: 2,
+          material: Cesium.Color.CHARTREUSE,
+          // 默认贴地
+          arcType: Cesium.ArcType.GEODESIC
+        }
+      });
     },
     networkAnalysis: function() {
       this.networkAna = !this.networkAna;
